@@ -19,7 +19,14 @@ Both commands default to `--scope user`, so the plugin is available in every pro
 
 Then `/reload-plugins` in an open session, or start a new one. Skills are namespaced: `/deej-stack:plan`. The same two steps are available in-session via `/plugin` (Marketplaces tab, then Discover).
 
-Updating: `claude plugin update deej-stack@deej-stack`, or turn it on once with `/plugin` → **Marketplaces** → `deej-stack` → **Enable auto-update** (off by default for non-Anthropic marketplaces). Either way the install is a snapshot keyed by `version` in `.claude-plugin/plugin.json`, so a push without a version bump does not reach installed copies.
+**Updating**
+
+```bash
+claude plugin marketplace update deej-stack
+claude plugin update deej-stack@deej-stack
+```
+
+Both lines are needed: `plugin update` reads the local marketplace clone and does not refresh it. Then `/reload-plugins` or a new session. To skip this in future, `/plugin` → **Marketplaces** → `deej-stack` → **Enable auto-update** (off by default for non-Anthropic marketplaces). Either way the install is a snapshot keyed by `version` in `.claude-plugin/plugin.json`, so a push without a version bump does not reach installed copies.
 
 To work from a checkout instead, `claude --plugin-dir /path/to/deej-stack` loads it for that session with nothing cached.
 
@@ -34,6 +41,8 @@ ln -s /path/to/deej-stack ~/.cursor/plugins/local/deej-stack
 ```
 
 then **Developer: Reload Window**. A marketplace install of the same name takes precedence over the local copy, so keep one or the other.
+
+**Updating**: for the GitHub import, use the **⋯** menu on the `Danjonesio Deej Stack` heading to remove it, then import again; whether the card refreshes on its own is not documented. For a checkout, `git pull` then **Developer: Reload Window**.
 
 ## Skills
 
