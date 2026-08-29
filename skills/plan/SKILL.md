@@ -102,6 +102,8 @@ Hand the plan over per the Harness table. Outside a plan mode, write it to `docs
 
 Reply in chat with at most ten lines: the outcome, the panel that ran with counts of critical and warning findings accepted, the open questions that need the human, and where the plan lives. The plan is in the file; do not paste it.
 
+Then end the turn. Do not start building. The `implement` skill (`/deej-stack:implement` in Claude Code, `/implement` in Cursor) builds the plan with a Verify gate and a commit per step and a review panel at the end, and only the user starts it; name the command with the plan path as the last line of the reply. In Claude Code plan mode, approval of `ExitPlanMode` normally continues into building; do not, and say why in that line.
+
 ## Rules
 
 - Guard the context window. Members' output stays in their reports; read each once, integrate, move on.

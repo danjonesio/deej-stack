@@ -15,6 +15,8 @@ claude plugin marketplace add danjonesio/deej-stack
 claude plugin install deej-stack@deej-stack
 ```
 
+Both commands default to `--scope user`, so the plugin is available in every project. To enable it for one repo instead, add `--scope project` to both (writes to that repo's `.claude/settings.json`, so it travels with the repo) or `--scope local` (gitignored `.claude/settings.local.json`).
+
 Then `/reload-plugins` in an open session, or start a new one. Skills are namespaced: `/deej-stack:plan`. The same two steps are available in-session via `/plugin` (Marketplaces tab, then Discover).
 
 Updating: `claude plugin update deej-stack@deej-stack`, or turn it on once with `/plugin` → **Marketplaces** → `deej-stack` → **Enable auto-update** (off by default for non-Anthropic marketplaces). Either way the install is a snapshot keyed by `version` in `.claude-plugin/plugin.json`, so a push without a version bump does not reach installed copies.
@@ -38,6 +40,7 @@ then **Developer: Reload Window**. A marketplace install of the same name takes 
 | skill | use it when |
 |---|---|
 | [`/plan`](./skills/plan/SKILL.md) | you're about to build a feature, an app, or a change that's more than a one-file edit, and you want the plan stress-tested before any code exists. |
+| [`/implement`](./skills/implement/SKILL.md) | you have a plan from `/plan` and want it built step by step, each step verified and committed, with a review panel on the finished diff. |
 
 ### `/plan`
 
@@ -51,6 +54,14 @@ Name the panel model in the prompt ("panel on grok", "use opus for the panel"); 
 2. **Review.** The orchestrator merges wave 1 into draft v1, then a fresh `code-reviewer` and `skeptic` attack it while the wave-1 members are resumed to check their own requirements landed.
 
 The orchestrator integrates every finding (or records why it was rejected), runs a completeness audit, and delivers one plan: in plan mode it's the plan file, otherwise `docs/plans/<date>-<slug>.md`. The skill carries a harness table so the same phases run on Claude Code's `Agent` tool and Cursor's `Task` tool. Roster, prompt template, and plan shape are in [`skills/plan/references/`](./skills/plan/references/).
+
+### `/implement`
+
+```
+/implement docs/plans/2026-08-29-magic-link-login.md
+```
+
+Takes a plan file (default: newest in `docs/plans/`), re-runs the plan's completeness audit against the current tree, resolves open questions on their stated defaults, and asks once for the review-panel model. Then it builds the **Changes** steps in order on a branch or worktree: each step runs its Verify line before the next starts and lands as **one commit per step**, so `git log` is the build record. Deviations are recorded, never absorbed; one that would change the plan's **Design** stops the run and sends you back to `/plan`. After the named tests and the plan's Verification section, a read-only panel (`security-analyst`, `code-reviewer`, `skeptic`, plus any situational analysts the plan ran) reviews the diff, findings get fixed and committed, and a build record with a ready PR body lands beside the plan. Roles flip from `/plan`: the main agent writes the code; members only read. Roster, prompt, and record shape are in [`skills/implement/references/`](./skills/implement/references/).
 
 ## Layout
 
@@ -67,5 +78,4 @@ AGENTS.md                    conventions; CLAUDE.md imports it
 
 Ideas not built yet, kept here so they don't need re-deriving.
 
-- **`/implement`.** The counterpart to `/plan`: takes a plan file (default: newest in `docs/plans/`), re-runs the plan's completeness audit against the current tree, resolves open questions with their stated defaults, then builds the **Changes** steps in order on a branch or worktree. Each step runs its Verify line before the next starts and lands as **one commit per step**, so `git log` is the build record. Deviations from the plan are recorded, not absorbed; one that changes the **Design** stops the run and goes back to `/plan`. Then the **Tests to add** cases, the **Verification** section verbatim, and a read-only review wave on the panel model (`security-analyst` checks each numbered requirement landed in the step that claimed it, `code-reviewer` on the diff, `skeptic` for drift into **Out of scope**), reusing `panel.md` and `reviewer-prompt.md`. Deliverable is a build record (`references/build-record.md`, with its own audit) and a PR body derived from it. Roles flip from `/plan`: the main agent writes the code, members only read. User-started (`disable-model-invocation: true`), so `/plan` cannot call it; instead `/plan`'s Phase G ends its turn naming the command, and in a harness plan mode tells the agent not to build after approval, because the built-in approve-then-build loop gives none of the step gating, commits, review, or record above.
 - **Saved panel-model default.** Today `/plan` takes the model from the prompt or asks once per run. pstack's alternative is a per-user config the skill reads first: `/setup-pstack` writes `~/.cursor/rules/pstack-models.mdc` (`alwaysApply: true`, one `role: model` line each; a list spawns one sub-agent per entry; `inherit-parent` means omit `model`). The equivalent here would be a `plan panel model: <slug>` line in `~/.claude/CLAUDE.md` (Claude Code) and an always-applied rule or `AGENTS.md` line (Cursor), with Phase A checking for it before asking. Prompt still overrides. Add it if the question starts to feel like friction.

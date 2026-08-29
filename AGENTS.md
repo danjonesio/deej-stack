@@ -44,6 +44,8 @@ Skills and agents are the same files for both. Only the manifests and the projec
 - Every member prompt comes from `references/reviewer-prompt.md` with placeholders filled; members are read-only and return the fixed output shape in that file.
 - The deliverable shape and the orchestrator's completeness audit live in `references/plan-template.md`. A skill does not deliver with a failing audit line.
 
+`skills/implement` consumes `/plan`'s deliverable and flips the roles: the main agent writes the code and commits one plan step at a time behind that step's Verify line; the panel runs once, at the end, read-only, against the diff, with its own roster and prompt under `skills/implement/references/`. It refers to plan sections by name, so a renamed heading in `plan-template.md` is a change to both skills.
+
 ## Adding a skill
 
 1. `skills/<name>/SKILL.md` with `name`, `description`, `disable-model-invocation` (if it spawns a panel), and `argument-hint`.
