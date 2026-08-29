@@ -17,7 +17,7 @@ claude plugin install deej-stack@deej-stack
 
 Then `/reload-plugins` in an open session, or start a new one. Skills are namespaced: `/deej-stack:plan`. The same two steps are available in-session via `/plugin` (Marketplaces tab, then Discover).
 
-Updating: `claude plugin update deej-stack@deej-stack`. The install is a snapshot keyed by `version` in `.claude-plugin/plugin.json`, so a push without a version bump does not reach installed copies.
+Updating: `claude plugin update deej-stack@deej-stack`, or turn it on once with `/plugin` → **Marketplaces** → `deej-stack` → **Enable auto-update** (off by default for non-Anthropic marketplaces). Either way the install is a snapshot keyed by `version` in `.claude-plugin/plugin.json`, so a push without a version bump does not reach installed copies.
 
 To work from a checkout instead, `claude --plugin-dir /path/to/deej-stack` loads it for that session with nothing cached.
 
