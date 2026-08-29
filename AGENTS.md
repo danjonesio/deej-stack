@@ -12,7 +12,8 @@ Dan's personal agent skills and automations, packaged as a plugin that loads in 
 | Skill invocation | `/deej-stack:plan` | `/plan` |
 | Project instructions | `CLAUDE.md` (imports this file) | this file |
 | Load from the working tree | `claude --plugin-dir .` | symlink at `~/.cursor/plugins/local/deej-stack`, then **Developer: Reload Window** |
-| Install | `claude plugin marketplace add /path/to/deej-stack` then `claude plugin install deej-stack@deej-stack` | the symlink above is the install; marketplace publishing is optional |
+| Install from GitHub | `claude plugin marketplace add danjonesio/deej-stack` then `claude plugin install deej-stack@deej-stack`; `/reload-plugins` or a new session | **Customize → Add Marketplace → Import from GitHub** with the repo URL, then **Add** on the plugin card |
+| Update an install | snapshot keyed by `version` in `.claude-plugin/plugin.json`: bump it, then `claude plugin update deej-stack@deej-stack` | marketplace re-reads the repo; a marketplace install shadows a `plugins/local` symlink of the same name |
 | Validate | `claude plugin validate .` | open **Customize → Skills** and confirm `plan` is listed |
 
 Skills and agents are the same files for both. Only the manifests and the project-instruction file differ.
@@ -49,6 +50,7 @@ Skills and agents are the same files for both. Only the manifests and the projec
 2. Put everything a sub-agent receives verbatim under `references/`.
 3. `claude plugin validate .`, then a run in each harness: `claude --plugin-dir .` and a Cursor reload.
 4. Add a row to the skills table in `README.md`.
+5. Bump `version` in both `plugin.json` files together. Claude Code installs only refresh when it changes.
 
 ## Prose rules for skills
 

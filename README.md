@@ -6,24 +6,32 @@ Modelled on [cursor's pstack](https://github.com/cursor/plugins/tree/main/pstack
 
 ## Install
 
-One checkout works in both Claude Code and Cursor.
+The repo is its own marketplace, so both harnesses install straight from GitHub. A local checkout also loads in both if you want to edit the skills.
 
 **Claude Code**
 
 ```bash
-claude plugin marketplace add /path/to/deej-stack
+claude plugin marketplace add danjonesio/deej-stack
 claude plugin install deej-stack@deej-stack
 ```
 
-Or, without installing, `claude --plugin-dir /path/to/deej-stack`. Skills are namespaced: `/deej-stack:plan`.
+Then `/reload-plugins` in an open session, or start a new one. Skills are namespaced: `/deej-stack:plan`. The same two steps are available in-session via `/plugin` (Marketplaces tab, then Discover).
+
+Updating: `claude plugin update deej-stack@deej-stack`. The install is a snapshot keyed by `version` in `.claude-plugin/plugin.json`, so a push without a version bump does not reach installed copies.
+
+To work from a checkout instead, `claude --plugin-dir /path/to/deej-stack` loads it for that session with nothing cached.
 
 **Cursor**
+
+Open **Customize** from the sidebar, then **Add Marketplace → Import from GitHub**, paste `https://github.com/danjonesio/deej-stack`, and press **Add** on the `deej-stack` card. Skills run unprefixed: `/plan`.
+
+To work from a checkout instead:
 
 ```bash
 ln -s /path/to/deej-stack ~/.cursor/plugins/local/deej-stack
 ```
 
-Then **Developer: Reload Window**. Skills appear under **Customize → Skills** and run as `/plan`.
+then **Developer: Reload Window**. A marketplace install of the same name takes precedence over the local copy, so keep one or the other.
 
 ## Skills
 
