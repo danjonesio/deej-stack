@@ -54,3 +54,9 @@ skills/<name>/references/    what sub-agents receive verbatim
 agents/                      reusable sub-agent definitions (none yet)
 AGENTS.md                    conventions; CLAUDE.md imports it
 ```
+
+## Later
+
+Ideas not built yet, kept here so they don't need re-deriving.
+
+- **Saved panel-model default.** Today `/plan` takes the model from the prompt or asks once per run. pstack's alternative is a per-user config the skill reads first: `/setup-pstack` writes `~/.cursor/rules/pstack-models.mdc` (`alwaysApply: true`, one `role: model` line each; a list spawns one sub-agent per entry; `inherit-parent` means omit `model`). The equivalent here would be a `plan panel model: <slug>` line in `~/.claude/CLAUDE.md` (Claude Code) and an always-applied rule or `AGENTS.md` line (Cursor), with Phase A checking for it before asking. Prompt still overrides. Add it if the question starts to feel like friction.
