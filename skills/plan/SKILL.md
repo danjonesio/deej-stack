@@ -31,7 +31,7 @@ Open a todo list with one entry per phase. The list is how the human sees where 
 
 ## Phase A: Frame
 
-1. If plan mode is not active, call `EnterPlanMode` so the harness enforces read-only for you and every member. Skip only if the user said not to.
+1. If plan mode is not active, call `EnterPlanMode` so the harness enforces read-only for you and every member. Skip only if the user said not to. If the tool is unavailable (the skill was run from a forked context), carry on; the read-only rule in this skill still holds.
 2. Write the brief. Keep the ask in the user's words, then add: the outcome as a user or operator would recognise it; the done predicate; constraints the user named; what is explicitly out of scope. Ask the user a question only if two readings of the ask lead to materially different plans. Otherwise state the assumption in the brief and carry on.
 3. Pick the panel from [`panel.md`](references/panel.md). The five minimum members always run. Add situational members by the "include" column; when unsure, include. Record the roster and the reasons in the panel record.
 4. Panel model is `opus` unless the user named another. Record any deviation.
