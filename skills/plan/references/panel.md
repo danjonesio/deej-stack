@@ -1,6 +1,6 @@
 # The panel
 
-Every panel member is an Opus 5 sub-agent spawned per the Harness table in `SKILL.md`, carrying a `name` from the tables below. Build each prompt from [`reviewer-prompt.md`](reviewer-prompt.md). Members never edit files; they read, search, and report.
+Every panel member is a sub-agent on the panel model the user chose in Phase A, spawned per the Harness table in `SKILL.md`, carrying a `name` from the tables below. Build each prompt from [`reviewer-prompt.md`](reviewer-prompt.md). Members never edit files; they read, search, and report.
 
 The orchestrator decides the situational members in Phase A and records the decision in the plan's panel record. When in doubt, include the member: a wasted analyst costs minutes; a missed migration or auth gap costs the build.
 
@@ -34,6 +34,6 @@ Resume a wave-1 member (per the Harness table in `SKILL.md`) rather than spawnin
 
 ## Sizing
 
-- Minimum panel: `architect`, `reuse-scout`, `security-analyst`, `code-reviewer`, `skeptic`. Five Opus runs plus two resumes.
+- Minimum panel: `architect`, `reuse-scout`, `security-analyst`, `code-reviewer`, `skeptic`. Five fresh runs plus two resumes.
 - Typical web app feature: minimum plus `data-analyst` and `ux-api-designer`.
-- The user can trim the panel ("just security and dedup") or swap the model ("use sonnet for the panel"). Record any deviation from the default in the panel record.
+- The user can trim the panel ("just security and dedup"). Record any deviation from the default in the panel record.

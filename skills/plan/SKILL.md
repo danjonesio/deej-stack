@@ -1,7 +1,7 @@
 ---
 name: plan
-description: "Plan a feature, app, or change with a panel of Opus sub-agents (architect, reuse scout, security analyst, code reviewer, skeptic, plus situational lenses) while the main agent orchestrates, synthesises, and audits the plan for completeness. Use for /plan, 'plan this', 'make a plan for', or any build where starting with code would lock in the wrong shape."
-argument-hint: <what to build or change>
+description: "Plan a feature, app, or change with a panel of sub-agents on the model you name (architect, reuse scout, security analyst, code reviewer, skeptic, plus situational lenses) while the main agent orchestrates, synthesises, and audits the plan for completeness. Use for /plan, 'plan this', 'make a plan for', or any build where starting with code would lock in the wrong shape."
+argument-hint: <what to build or change> [panel model]
 disable-model-invocation: true
 ---
 
@@ -24,14 +24,17 @@ This skill runs in Claude Code and in Cursor. The phases below say *spawn*, *res
 
 | | Claude Code | Cursor |
 |---|---|---|
-| Spawn a member | `Agent` tool: `subagent_type: "general-purpose"`, `model: "opus"`, `name: <roster name>` | `Task` tool: `subagent_type: generalPurpose`, `model: claude-opus-5[effort=high]`, `readonly: true`, `run_in_background: true` |
+| Spawn a member | `Agent` tool: `subagent_type: "general-purpose"`, `model: <panel model>`, `name: <roster name>` | `Task` tool: `subagent_type: generalPurpose`, `model: <panel model>`, `readonly: true`, `run_in_background: true` |
+| Panel model form | an alias (`opus`, `sonnet`, `haiku`, `fable`) or a full model id; the `Agent` tool has no effort field | a full slug, with options in brackets as the user gave them (`<slug>[effort=high]` form) |
+| Inherit the session model | omit `model` | omit `model` |
+| Ask the user | `AskUserQuestion` | `AskQuestion` |
 | Run a wave concurrently | every call in one message | every call in one message |
 | Wait for a member | its completion notification arrives; nothing before that is a result | the background task reports back; a partial output file is not a result |
 | Resume a member | `SendMessage` to its `name` | resume the agent ID the `Task` call returned |
 | Explore the codebase | `Explore` agent, `very thorough` | the built-in `explore` subagent |
 | Enter read-only planning | `EnterPlanMode` | no tool; the user picks Plan Mode (Shift+Tab). This skill's rules are the guard |
 | Hand the plan over | write the plan file the harness names, then `ExitPlanMode` | in Plan Mode, write the plan file the harness names; otherwise `docs/plans/` |
-| Model slug rejected | | read the valid slugs from the tool's error, take the closest Opus 5 tier, note it in the panel record |
+| Model rejected by the tool | read the valid options from the error, take the closest tier of the same family, tell the user in the reply, note it in the panel record | same |
 
 Where the harness has no `name` field, put the roster name on the first line of the prompt and keep the returned agent ID; wave 2 needs it.
 
@@ -52,7 +55,7 @@ Open a todo list with one entry per phase. The list is how the human sees where 
 1. Enter read-only planning per the Harness table if the harness has a tool for it and the user did not say otherwise. With or without the tool, nothing in this skill writes a file except the plan.
 2. Write the brief. Keep the ask in the user's words, then add: the outcome as a user or operator would recognise it; the done predicate; constraints the user named; what is explicitly out of scope. Ask the user a question only if two readings of the ask lead to materially different plans. Otherwise state the assumption in the brief and carry on.
 3. Pick the panel from [`panel.md`](references/panel.md). The five minimum members always run. Add situational members by the "include" column; when unsure, include. Record the roster and the reasons in the panel record.
-4. Panel model is Opus 5 unless the user named another. Record any deviation.
+4. Panel model. Take it from the ask if the user named one: the model, and effort where the harness accepts it. If the ask names none, ask once with the question tool before anything is spawned: which model the panel should run on, offering what this harness accepts plus "same as this session" (omit `model` so members inherit). Never assume a default; the panel costs several runs and the model is the user's call. Record the choice in the panel record.
 
 ## Phase B: Ground
 
@@ -103,6 +106,6 @@ Reply in chat with at most ten lines: the outcome, the panel that ran with count
 
 - Guard the context window. Members' output stays in their reports; read each once, integrate, move on.
 - Evidence over assertion. Nothing enters the plan without a path, a command, or a config value behind it.
-- Never block on the human. Proceed on stated defaults; every open question carries one.
+- Never block on the human after Phase A. The panel-model question is the one deliberate checkpoint; everything else proceeds on stated defaults, and every open question carries one.
 - Never fabricate or predict a pending member's result. If the result has not arrived, the member is still running.
-- The default panel is the default. The user can trim it ("just security and dedup"), swap the model, or skip wave 2 ("quick plan"). Record every deviation in the panel record.
+- The default panel is the default. The user can trim it ("just security and dedup") or skip wave 2 ("quick plan"). Record every deviation in the panel record.

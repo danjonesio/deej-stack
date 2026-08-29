@@ -2,14 +2,23 @@
   "name": "deej-stack",
   "displayName": "deej-stack",
   "version": "0.1.0",
-  "description": "Dan's personal skills and automations. Multi-agent planning with an Opus review panel, and the prompts I reach for every day, consolidated.",
+  "description": "Dan's personal skills and automations. Multi-agent planning with a review panel on the model you choose, and the prompts I reach for every day, consolidated.",
   "author": {
     "name": "Dan Jones"
   },
   "homepage": "https://github.com/danjonesio/deej-stack",
   "repository": "https://github.com/danjonesio/deej-stack",
-  "keywords": ["planning", "subagents", "review", "workflow"],
+  "keywords": [
+    "planning",
+    "subagents",
+    "review",
+    "workflow"
+  ],
   "category": "developer-tools",
-  "tags": ["planning", "review", "workflow"],
+  "tags": [
+    "planning",
+    "review",
+    "workflow"
+  ],
   "skills": "./skills/"
 }

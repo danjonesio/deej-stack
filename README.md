@@ -37,7 +37,7 @@ Then **Developer: Reload Window**. Skills appear under **Customize → Skills** 
 /plan add magic-link login to the dashboard, keep the existing session cookie
 ```
 
-The main agent orchestrates; a panel of Opus sub-agents does the lens work, in two waves:
+Name the panel model in the prompt ("panel on grok", "use opus for the panel"); if you don't, it asks once before spawning anything. The main agent orchestrates; the panel does the lens work, in two waves:
 
 1. **Analyse.** `architect` drafts the plan (caller's usage first, then data shapes, module map, sequenced steps). `reuse-scout` inventories what already exists so nothing gets written twice. `security-analyst` threat-models the change into concrete requirements. Situational members (`data-analyst`, `ux-api-designer`, `ops-analyst`, `perf-analyst`) join when the change touches their area.
 2. **Review.** The orchestrator merges wave 1 into draft v1, then a fresh `code-reviewer` and `skeptic` attack it while the wave-1 members are resumed to check their own requirements landed.

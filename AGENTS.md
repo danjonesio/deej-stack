@@ -29,8 +29,9 @@ Skills and agents are the same files for both. Only the manifests and the projec
 - Frontmatter both harnesses read: `name`, `description`, `disable-model-invocation`. Claude Code also reads `argument-hint`; Cursor ignores it. Do not use fields only one harness understands for anything the skill depends on.
 - Reference files by relative path from the skill directory (`references/panel.md`). Never `${CLAUDE_SKILL_DIR}` or another harness variable.
 - `$ARGUMENTS` substitutes in Claude Code and is not documented in Cursor. If a skill uses it, add the fallback line `skills/plan/SKILL.md` uses so an unsubstituted placeholder does not confuse the agent.
-- Any skill that spawns, resumes, or explores carries a **Harness** table with a Claude Code column and a Cursor column, and the phases refer to the table instead of naming tools. `skills/plan/SKILL.md` is the template: Claude Code spawns with the `Agent` tool (`general-purpose`, `model: "opus"`, `name`) and resumes with `SendMessage`; Cursor spawns with the `Task` tool (`generalPurpose`, `model: claude-opus-5[effort=high]`, `readonly: true`, `run_in_background: true`) and resumes by agent ID. Plan mode is a tool in Claude Code (`EnterPlanMode` / `ExitPlanMode`) and a user-chosen mode in Cursor (Shift+Tab); a skill must work without it.
-- Skills that spawn a panel set `disable-model-invocation: true`: they cost several Opus runs, so only the user starts them.
+- Any skill that spawns, resumes, or explores carries a **Harness** table with a Claude Code column and a Cursor column, and the phases refer to the table instead of naming tools. `skills/plan/SKILL.md` is the template: Claude Code spawns with the `Agent` tool (`general-purpose`, `name`) and resumes with `SendMessage`; Cursor spawns with the `Task` tool (`generalPurpose`, `readonly: true`, `run_in_background: true`) and resumes by agent ID. Plan mode is a tool in Claude Code (`EnterPlanMode` / `ExitPlanMode`) and a user-chosen mode in Cursor (Shift+Tab); a skill must work without it.
+- Never hardcode a sub-agent model or effort. The user names it in the prompt, or the skill asks once with the question tool before spawning; "same as this session" means omit `model`. Dan runs different models in each harness, and a skill must not assume either.
+- Skills that spawn a panel set `disable-model-invocation: true`: they cost several model runs, so only the user starts them.
 - When `agents/` gets its first file, write the union of both frontmatter sets: `name`, `description`, `model` are shared; Claude Code adds `tools`; Cursor adds `readonly` and `is_background`. Cursor wants full model slugs; Claude Code accepts aliases like `opus`.
 
 ## How the multi-agent skills are built
@@ -38,7 +39,7 @@ Skills and agents are the same files for both. Only the manifests and the projec
 `skills/plan` is the pattern the rest follow:
 
 - The main agent is the orchestrator and final reviewer. It frames, grounds, synthesises, and audits; it never does the lens work itself and never writes code.
-- Panel members are Opus sub-agents named from the roster in `references/panel.md`. All members of a wave go out in one message so they run concurrently. Wave 2 resumes wave-1 members rather than spawning fresh, so they keep the codebase context they built.
+- Panel members are sub-agents on the user-chosen panel model, named from the roster in `references/panel.md`. All members of a wave go out in one message so they run concurrently. Wave 2 resumes wave-1 members rather than spawning fresh, so they keep the codebase context they built.
 - Every member prompt comes from `references/reviewer-prompt.md` with placeholders filled; members are read-only and return the fixed output shape in that file.
 - The deliverable shape and the orchestrator's completeness audit live in `references/plan-template.md`. A skill does not deliver with a failing audit line.
 
