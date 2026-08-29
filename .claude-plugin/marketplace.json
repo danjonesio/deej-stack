@@ -1,0 +1,15 @@
+{
+  "name": "deej-stack",
+  "description": "Dan's personal skills and automations for Claude Code and Cursor.",
+  "owner": {
+    "name": "Dan Jones"
+  },
+  "plugins": [
+    {
+      "name": "deej-stack",
+      "description": "Dan's personal Claude Code skills and automations.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

@@ -64,7 +64,7 @@ Severity:
 
 ## Wave-2 resume message
 
-Send this to a wave-1 member with SendMessage to get its review of draft v1.
+Send this when resuming a wave-1 member (per the Harness table in `SKILL.md`) to get its review of draft v1.
 
 ---
 

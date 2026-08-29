@@ -1,0 +1,57 @@
+# deej-stack
+
+Dan's personal agent skills and automations, packaged as a plugin that loads in both Claude Code and Cursor. Modelled on cursor's `pstack`. There is no application code: the product is the prose in `skills/*/SKILL.md` and the reference files those skills hand to sub-agents. Agent-facing prose has a higher bar than human prose; an unhelpful sentence becomes an instruction.
+
+## Two harnesses, one repo
+
+| | Claude Code | Cursor |
+|---|---|---|
+| Manifest | `.claude-plugin/plugin.json` (+ `marketplace.json` so the repo installs as its own marketplace) | `.cursor-plugin/plugin.json` |
+| Skills | `skills/<name>/SKILL.md`, auto-discovered | same directory, auto-discovered |
+| Agents | `agents/<name>.md`, auto-discovered | same directory, auto-discovered |
+| Skill invocation | `/deej-stack:plan` | `/plan` |
+| Project instructions | `CLAUDE.md` (imports this file) | this file |
+| Load from the working tree | `claude --plugin-dir .` | symlink at `~/.cursor/plugins/local/deej-stack`, then **Developer: Reload Window** |
+| Install | `claude plugin marketplace add /path/to/deej-stack` then `claude plugin install deej-stack@deej-stack` | the symlink above is the install; marketplace publishing is optional |
+| Validate | `claude plugin validate .` | open **Customize → Skills** and confirm `plan` is listed |
+
+Skills and agents are the same files for both. Only the manifests and the project-instruction file differ.
+
+## Layout
+
+- `.claude-plugin/`, `.cursor-plugin/`: manifests. Both auto-discover `skills/` and `agents/`; do not list components in them.
+- `skills/<name>/SKILL.md`: the workflow (phases, rules, delivery). Frontmatter `name` and `description` are required; `name` must match the folder.
+- `skills/<name>/references/`: anything a skill passes verbatim to a sub-agent (rosters, prompt templates, output templates, rubrics). SKILL.md points at these by relative path and never restates them.
+- `agents/<name>.md`: reusable sub-agent definitions. None yet; today skills spawn general-purpose agents with inline prompts built from `references/`.
+
+## Writing a skill that works in both
+
+- Frontmatter both harnesses read: `name`, `description`, `disable-model-invocation`. Claude Code also reads `argument-hint`; Cursor ignores it. Do not use fields only one harness understands for anything the skill depends on.
+- Reference files by relative path from the skill directory (`references/panel.md`). Never `${CLAUDE_SKILL_DIR}` or another harness variable.
+- `$ARGUMENTS` substitutes in Claude Code and is not documented in Cursor. If a skill uses it, add the fallback line `skills/plan/SKILL.md` uses so an unsubstituted placeholder does not confuse the agent.
+- Any skill that spawns, resumes, or explores carries a **Harness** table with a Claude Code column and a Cursor column, and the phases refer to the table instead of naming tools. `skills/plan/SKILL.md` is the template: Claude Code spawns with the `Agent` tool (`general-purpose`, `model: "opus"`, `name`) and resumes with `SendMessage`; Cursor spawns with the `Task` tool (`generalPurpose`, `model: claude-opus-5[effort=high]`, `readonly: true`, `run_in_background: true`) and resumes by agent ID. Plan mode is a tool in Claude Code (`EnterPlanMode` / `ExitPlanMode`) and a user-chosen mode in Cursor (Shift+Tab); a skill must work without it.
+- Skills that spawn a panel set `disable-model-invocation: true`: they cost several Opus runs, so only the user starts them.
+- When `agents/` gets its first file, write the union of both frontmatter sets: `name`, `description`, `model` are shared; Claude Code adds `tools`; Cursor adds `readonly` and `is_background`. Cursor wants full model slugs; Claude Code accepts aliases like `opus`.
+
+## How the multi-agent skills are built
+
+`skills/plan` is the pattern the rest follow:
+
+- The main agent is the orchestrator and final reviewer. It frames, grounds, synthesises, and audits; it never does the lens work itself and never writes code.
+- Panel members are Opus sub-agents named from the roster in `references/panel.md`. All members of a wave go out in one message so they run concurrently. Wave 2 resumes wave-1 members rather than spawning fresh, so they keep the codebase context they built.
+- Every member prompt comes from `references/reviewer-prompt.md` with placeholders filled; members are read-only and return the fixed output shape in that file.
+- The deliverable shape and the orchestrator's completeness audit live in `references/plan-template.md`. A skill does not deliver with a failing audit line.
+
+## Adding a skill
+
+1. `skills/<name>/SKILL.md` with `name`, `description`, `disable-model-invocation` (if it spawns a panel), and `argument-hint`.
+2. Put everything a sub-agent receives verbatim under `references/`.
+3. `claude plugin validate .`, then a run in each harness: `claude --plugin-dir .` and a Cursor reload.
+4. Add a row to the skills table in `README.md`.
+
+## Prose rules for skills
+
+- Tell the agent to do the thing; explain only when the rule is confusing without a reason.
+- Every sentence must change a decision. When in doubt, delete.
+- Point at structural sources (paths, templates, config) rather than hardcoding details that go stale.
+- Delegate to other skills or reference files by path; do not restate them.
