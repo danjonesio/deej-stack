@@ -13,7 +13,7 @@ Dan's personal agent skills and automations, packaged as a plugin that loads in 
 | Project instructions | `CLAUDE.md` (imports this file) | this file |
 | Load from the working tree | `claude --plugin-dir .` | symlink at `~/.cursor/plugins/local/deej-stack`, then **Developer: Reload Window** |
 | Install from GitHub | `claude plugin marketplace add danjonesio/deej-stack` then `claude plugin install deej-stack@deej-stack`; `/reload-plugins` or a new session | **Customize → Add Marketplace → Import from GitHub** with the repo URL, then **Add** on the plugin card |
-| Update an install | snapshot keyed by `version` in `.claude-plugin/plugin.json`: bump it, then `claude plugin marketplace update deej-stack` and `claude plugin update deej-stack@deej-stack` (the second does not refresh the clone) | marketplace re-reads the repo; a marketplace install shadows a `plugins/local` symlink of the same name |
+| Update an install | snapshot keyed by `version` in `.claude-plugin/plugin.json`: bump it, then `claude plugin marketplace update deej-stack` and `claude plugin update deej-stack@deej-stack` (the second does not refresh the clone) | a GitHub import is pinned to its import-time commit: remove the marketplace and import it again (Uninstall + Add keeps the old commit); a marketplace install shadows a `plugins/local` copy of the same name |
 | Validate | `claude plugin validate .` | open **Customize → Skills** and confirm `plan` is listed |
 
 Skills and agents are the same files for both. Only the manifests and the project-instruction file differ.

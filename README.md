@@ -42,7 +42,7 @@ ln -s /path/to/deej-stack ~/.cursor/plugins/local/deej-stack
 
 then **Developer: Reload Window**. A marketplace install of the same name takes precedence over the local copy, so keep one or the other.
 
-**Updating**: for the GitHub import, use the **⋯** menu on the `Danjonesio Deej Stack` heading to remove it, then import again; whether the card refreshes on its own is not documented. For a checkout, `git pull` then **Developer: Reload Window**.
+**Updating**: a personal GitHub import is pinned to the commit Cursor saw when you imported it; Uninstall + Add, Update, and Reinstall all put that same commit back (Cursor staff on the forum, no fix as of August 2026). To move to the current commit: Customize → Browse → the **Danjonesio Deej Stack** heading → **⋯ → Remove**, then **Add Marketplace → Import from GitHub** again and **Add** the plugin. Same with the Cursor CLI: `agent plugin marketplace remove <name from agent plugin marketplace list>`, `agent plugin marketplace add https://github.com/danjonesio/deej-stack`, then reinstall from `/plugin`. For a checkout, `git pull` then **Developer: Reload Window**.
 
 ## Skills
 
