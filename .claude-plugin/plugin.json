@@ -1,6 +1,6 @@
 {
   "name": "deej-stack",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Dan's personal Claude Code skills and automations. Multi-agent planning with a review panel on the model you choose, and the prompts I reach for every day, consolidated.",
   "author": {
     "name": "Dan Jones"

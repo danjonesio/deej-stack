@@ -1,6 +1,6 @@
 ---
-name: implement
-description: "Build from a plan file written by /plan: re-audit the plan against the current tree, resolve its open questions on their stated defaults, execute the Changes steps in order with each step's Verify line as the gate and one commit per step, add the named tests, run the plan's Verification section, then put the diff in front of a read-only review panel on the model you name. Delivers a build record and a PR body. Use for /implement, 'build the plan', 'implement docs/plans/<file>'."
+name: d-implement
+description: "Build from a plan file written by /d-plan: re-audit the plan against the current tree, resolve its open questions on their stated defaults, execute the Changes steps in order with each step's Verify line as the gate and one commit per step, add the named tests, run the plan's Verification section, then put the diff in front of a read-only review panel on the model you name. Delivers a build record and a PR body. Use for /d-implement, 'build the plan', 'implement docs/plans/<file>'."
 argument-hint: [plan path] [panel model]
 disable-model-invocation: true
 ---
@@ -18,7 +18,7 @@ Read these before starting; they live beside this file and are the contract for 
 - `references/review-prompt.md`: the prompt every reviewer receives, and the re-check message.
 - `references/build-record.md`: the shape of the deliverable and the build audit.
 
-The plan you build from has the shape in `../plan/references/plan-template.md`. Its section names (**Changes**, **Verify**, **Tests to add**, **Verification**, **Security requirements**, **Risks and open questions**, **Out of scope**, **Panel record**) are what the phases below refer to.
+The plan you build from has the shape in `../d-plan/references/plan-template.md`. Its section names (**Changes**, **Verify**, **Tests to add**, **Verification**, **Security requirements**, **Risks and open questions**, **Out of scope**, **Panel record**) are what the phases below refer to.
 
 ## Harness
 
@@ -65,8 +65,8 @@ Open a todo list with one entry per phase. When Phase D starts, expand its entry
 ## Phase B: Audit
 
 1. `git status --porcelain` must be empty. A dirty tree means someone's uncommitted work would end up in a step commit; stop and say what is dirty.
-2. Run the completeness audit at the bottom of `../plan/references/plan-template.md` against the current tree, not the tree the plan was written against. Check every path in **Changes** and **Findings from exploration** with `ls` or a short explore run; line numbers drift, files move.
-3. A mechanical mismatch (a path moved, a signature renamed, a command that changed name) is fixed in your working copy of the step and recorded as a deviation. A mismatch that changes **Design** (a data shape, an interface, the module map) is not yours to fix: write the build record with the audit result, and tell the user to re-run the plan skill with what changed.
+2. Run the completeness audit at the bottom of `../d-plan/references/plan-template.md` against the current tree, not the tree the plan was written against. Check every path in **Changes** and **Findings from exploration** with `ls` or a short explore run; line numbers drift, files move.
+3. A mechanical mismatch (a path moved, a signature renamed, a command that changed name) is fixed in your working copy of the step and recorded as a deviation. A mismatch that changes **Design** (a data shape, an interface, the module map) is not yours to fix: write the build record with the audit result, and tell the user to re-run `/d-plan` with what changed.
 
 ## Phase C: Isolate
 
