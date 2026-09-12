@@ -4,7 +4,7 @@ Every GitHub repo gets a `.github/dependabot.yml` that someone chose, because th
 
 ## Applies when
 
-`.github/dependabot.yml` is absent, or the ask says `review` and the file exists. Dependabot reads that path; a `dependabot.yaml` or a copy outside `.github/` counts as absent, and the reply says so.
+`.github/dependabot.yml` is absent, or the ask says `review` and the file exists. Dependabot reads that path; a `dependabot.yaml` or a copy outside `.github/` counts as absent, and the reply says so. A copy that exists but is untracked or not yet on the default branch (`git ls-files --error-unmatch .github/dependabot.yml` fails, or the file is not in `git ls-tree origin/<default> -- .github/dependabot.yml`) is met-pending: skip the standard and say in the reply that the file has not landed.
 
 ## Facts
 
