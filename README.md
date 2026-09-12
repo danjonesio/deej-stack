@@ -50,6 +50,7 @@ then **Developer: Reload Window**. A marketplace install of the same name takes 
 |---|---|
 | [`/d-plan`](./skills/d-plan/SKILL.md) | you're about to build a feature, an app, or a change that's more than a one-file edit, and you want the plan stress-tested before any code exists. |
 | [`/d-implement`](./skills/d-implement/SKILL.md) | you have a plan from `/d-plan` and want it built step by step, each step verified and committed, with a review panel on the finished diff. |
+| [`/d-github`](./skills/d-github/SKILL.md) | a repo on GitHub has no `.github/dependabot.yml`, or you want the one it has checked against the standard: version updates where merges deploy nothing, grouped security-only updates where they do. Single agent, no panel; the model may offer it on its own. Standards to come land as rows in its table. |
 
 ## Layout
 
@@ -62,9 +63,20 @@ agents/                      reusable sub-agent definitions (none yet)
 AGENTS.md                    conventions; CLAUDE.md imports it
 ```
 
+## Firing on its own
+
+`/d-github` is the one skill the model may invoke unprompted. Its description covers the mid-task case (you are editing CI or dependencies in a repo with no Dependabot config). To have it offered on entering such a repo at all, add one line to `~/.claude/CLAUDE.md`:
+
+```
+In a repo whose origin is on github.com and that has no .github/dependabot.yml, offer /deej-stack:d-github once, then drop it if declined.
+```
+
+Cursor's equivalent is a User Rule (Settings → Rules) with the same sentence and `/d-github`.
+
 ## Later
 
 Ideas not built yet, kept here so they don't need re-deriving.
 
+- **`/d-github` standards to add.** The Actions posture that belongs in the same conversation as Dependabot: every third-party action pinned by full commit SHA, `permissions: {}` at workflow top level with per-job grants, and no `pull_request_target`. Each is one reference file with the four fixed sections and one row in the skill's table.
 - **`/d-review`.** The `/d-implement` review panel (`skills/d-implement/references/panel.md` and `review-prompt.md`) run on its own against any diff, branch, or PR, no plan needed. Cursor has no built-in code review, so this is the one that earns its cross-harness keep. Mostly a thin `SKILL.md` pointing at the references that already exist.
 - **Saved panel-model default.** Today `/d-plan` takes the model from the prompt or asks once per run. pstack's alternative is a per-user config the skill reads first: `/setup-pstack` writes `~/.cursor/rules/pstack-models.mdc` (`alwaysApply: true`, one `role: model` line each; a list spawns one sub-agent per entry; `inherit-parent` means omit `model`). The equivalent here would be a `plan panel model: <slug>` line in `~/.claude/CLAUDE.md` (Claude Code) and an always-applied rule or `AGENTS.md` line (Cursor), with Phase A checking for it before asking. Prompt still overrides. Add it if the question starts to feel like friction.

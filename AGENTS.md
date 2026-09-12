@@ -22,7 +22,7 @@ Skills and agents are the same files for both. Only the manifests and the projec
 
 - `.claude-plugin/`, `.cursor-plugin/`: manifests. Both auto-discover `skills/` and `agents/`; do not list components in them.
 - `skills/<name>/SKILL.md`: the workflow (phases, rules, delivery). Frontmatter `name` and `description` are required; `name` must match the folder.
-- `skills/<name>/references/`: anything a skill passes verbatim to a sub-agent (rosters, prompt templates, output templates, rubrics). SKILL.md points at these by relative path and never restates them.
+- `skills/<name>/references/`: anything a skill passes verbatim to a sub-agent (rosters, prompt templates, output templates, rubrics), or reads as a standard it applies (`d-github`). SKILL.md points at these by relative path and never restates them.
 - `agents/<name>.md`: reusable sub-agent definitions. None yet; today skills spawn general-purpose agents with inline prompts built from `references/`.
 
 ## Writing a skill that works in both
@@ -32,7 +32,7 @@ Skills and agents are the same files for both. Only the manifests and the projec
 - `$ARGUMENTS` substitutes in Claude Code and is not documented in Cursor. If a skill uses it, add the fallback line `skills/d-plan/SKILL.md` uses so an unsubstituted placeholder does not confuse the agent.
 - Any skill that spawns, resumes, or explores carries a **Harness** table with a Claude Code column and a Cursor column, and the phases refer to the table instead of naming tools. `skills/d-plan/SKILL.md` is the template: Claude Code spawns with the `Agent` tool (`general-purpose`, `name`) and resumes with `SendMessage`; Cursor spawns with the `Task` tool (`generalPurpose`, `readonly: true`, `run_in_background: true`) and resumes by agent ID. Plan mode is a tool in Claude Code (`EnterPlanMode` / `ExitPlanMode`) and a user-chosen mode in Cursor (Shift+Tab); a skill must work without it.
 - Never hardcode a sub-agent model or effort. The user names it in the prompt, or the skill asks once with the question tool before spawning; "same as this session" means omit `model`. Dan runs different models in each harness, and a skill must not assume either.
-- Skills that spawn a panel set `disable-model-invocation: true`: they cost several model runs, so only the user starts them.
+- Skills that spawn a panel set `disable-model-invocation: true`: they cost several model runs, so only the user starts them. A single-agent skill whose value is noticing something unprompted (`d-github` on a repo with no Dependabot config) leaves it off and puts the trigger in `description`.
 - When `agents/` gets its first file, write the union of both frontmatter sets: `name`, `description`, `model` are shared; Claude Code adds `tools`; Cursor adds `readonly` and `is_background`. Cursor wants full model slugs; Claude Code accepts aliases like `opus`.
 
 ## How the multi-agent skills are built
@@ -45,6 +45,12 @@ Skills and agents are the same files for both. Only the manifests and the projec
 - The deliverable shape and the orchestrator's completeness audit live in `references/plan-template.md`. A skill does not deliver with a failing audit line.
 
 `skills/d-implement` consumes `/d-plan`'s deliverable and flips the roles: the main agent writes the code and commits one plan step at a time behind that step's Verify line; the panel runs once, at the end, read-only, against the diff, with its own roster and prompt under `skills/d-implement/references/`. It refers to plan sections by name, so a renamed heading in `plan-template.md` is a change to both skills.
+
+## How the standards skill is built
+
+`skills/d-github` is a single agent, no panel: it reads the repo, decides, writes a file, and explains the decision in that file's header. Its SKILL.md holds a table of standards; each standard is one file under `references/` with four fixed sections (**Applies when**, **Facts**, **Rules**, **Output**) that the phases refer to by name. Facts are commands and paths, never inference; anything the rules cannot settle from facts is a question with a default; anything that changes repository settings is always a question. Each reference carries the vendor config keys it may use, verified against the docs on a stated date, because one unverified key invalidates the whole file.
+
+Adding a standard: one reference file in that shape, one row in the SKILL.md table, and a check that the `description` still names the trigger for it. The trigger line in `~/.claude/CLAUDE.md` (see README) makes it fire on entering a repo; the description makes it fire mid-task.
 
 ## Adding a skill
 
