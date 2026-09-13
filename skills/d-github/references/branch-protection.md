@@ -10,6 +10,8 @@ Private repo on a Free plan (Fact 7): rulesets are not enforced there. Write the
 
 ## Facts
 
+`scripts/facts.sh` prints all of these under its `repo`, `actions`, and `security and protection` sections; the commands below are what it runs, kept here so a line it marks unknown can be re-run by hand.
+
 1. **Repo and default branch.** As Dependabot Fact 1, in [`dependabot.md`](dependabot.md).
 2. **Existing rulesets.** `gh api repos/OWNER/REPO/rulesets` for the repo's own; `gh api repos/OWNER/REPO/rules/branches/<default>` for every rule in force on the branch, org-level included. Record each rule type in force and which ruleset it came from.
 3. **Classic protection.** `gh api repos/OWNER/REPO/branches/<default>/protection`: 200 with a body means a classic rule exists (record `required_pull_request_reviews`, `required_status_checks`, `enforce_admins`, `allow_force_pushes`, `allow_deletions`); 404 means none.

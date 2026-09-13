@@ -58,7 +58,8 @@ then **Developer: Reload Window**. A marketplace install of the same name takes 
 .claude-plugin/              Claude Code manifest + marketplace.json
 .cursor-plugin/plugin.json   Cursor manifest
 skills/<name>/SKILL.md       the workflow (same files for both harnesses)
-skills/<name>/references/    what sub-agents receive verbatim
+skills/<name>/references/    what sub-agents receive verbatim, or a standard a skill applies
+skills/<name>/scripts/       read-only helpers (d-github's fact sheet)
 agents/                      reusable sub-agent definitions (none yet)
 AGENTS.md                    conventions; CLAUDE.md imports it
 ```

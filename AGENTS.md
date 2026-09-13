@@ -1,6 +1,6 @@
 # deej-stack
 
-Dan's personal agent skills and automations, packaged as a plugin that loads in both Claude Code and Cursor. Modelled on cursor's `pstack`. There is no application code: the product is the prose in `skills/*/SKILL.md` and the reference files those skills hand to sub-agents. Agent-facing prose has a higher bar than human prose; an unhelpful sentence becomes an instruction.
+Dan's personal agent skills and automations, packaged as a plugin that loads in both Claude Code and Cursor. Modelled on cursor's `pstack`. There is no application code beyond one read-only shell script: the product is the prose in `skills/*/SKILL.md` and the reference files those skills hand to sub-agents. Agent-facing prose has a higher bar than human prose; an unhelpful sentence becomes an instruction.
 
 ## Two harnesses, one repo
 
@@ -23,6 +23,7 @@ Skills and agents are the same files for both. Only the manifests and the projec
 - `.claude-plugin/`, `.cursor-plugin/`: manifests. Both auto-discover `skills/` and `agents/`; do not list components in them.
 - `skills/<name>/SKILL.md`: the workflow (phases, rules, delivery). Frontmatter `name` and `description` are required; `name` must match the folder.
 - `skills/<name>/references/`: anything a skill passes verbatim to a sub-agent (rosters, prompt templates, output templates, rubrics), or reads as a standard it applies (`d-github`). SKILL.md points at these by relative path and never restates them.
+- `skills/<name>/scripts/`: deterministic, read-only helpers a skill runs instead of composing the same commands every time (`d-github/scripts/facts.sh`). A script never writes to the repo or to GitHub; the judgement stays in the prose.
 - `agents/<name>.md`: reusable sub-agent definitions. None yet; today skills spawn general-purpose agents with inline prompts built from `references/`.
 
 ## Writing a skill that works in both
@@ -48,7 +49,7 @@ Skills and agents are the same files for both. Only the manifests and the projec
 
 ## How the standards skill is built
 
-`skills/d-github` is a single agent, no panel: it reads the repo, decides, writes a file, and explains the decision in that file's header. Its SKILL.md holds a table of standards; each standard is one file under `references/` with four fixed sections (**Applies when**, **Facts**, **Rules**, **Output**) that the phases refer to by name. Facts are commands and paths, never inference; anything the rules cannot settle from facts is a question with a default; anything that changes repository settings is always a question. Each reference carries the vendor config keys it may use, verified against the docs on a stated date, because one unverified key invalidates the whole file. A standard whose real output is a repository setting (the ruleset) still writes a file to the tree as the record and makes applying it a question, so the setting is recreatable from the repo and never changed on a default.
+`skills/d-github` is a single agent, no panel: it reads the repo, decides, writes a file, and explains the decision in that file's header. Its SKILL.md holds a table of standards; each standard is one file under `references/` with four fixed sections (**Applies when**, **Facts**, **Rules**, **Output**) that the phases refer to by name. Facts are commands and paths, never inference, and `scripts/facts.sh` runs all of them in one read-only pass so every run sees the same sheet; a new standard's facts are added to the script and documented in the reference; anything the rules cannot settle from facts is a question with a default; anything that changes repository settings is always a question. Each reference carries the vendor config keys it may use, verified against the docs on a stated date, because one unverified key invalidates the whole file. A standard whose real output is a repository setting (the ruleset) still writes a file to the tree as the record and makes applying it a question, so the setting is recreatable from the repo and never changed on a default.
 
 Adding a standard: one reference file in that shape, one row in the SKILL.md table, and a check that the `description` still names the trigger for it. The trigger line in `~/.claude/CLAUDE.md` (see README) makes it fire on entering a repo; the description makes it fire mid-task.
 

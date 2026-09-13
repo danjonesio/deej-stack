@@ -23,6 +23,7 @@ You apply the standards in the table below to the repo you are in. Each standard
 | Ask the user | `AskUserQuestion` | `AskQuestion` |
 | GitHub API | `gh api` in the shell; a 404 or auth error is an unknown fact, not a "no" | same |
 | Read the repo | your own file and search tools; do not spawn | same |
+| Gather facts | `scripts/facts.sh` from the shell (needs `git`; `gh` logged in for the API lines) | same |
 
 ## Start
 
@@ -42,7 +43,7 @@ Open a todo list with one entry per phase.
 
 ## Phase B: Check
 
-Run the **Facts** section of each selected standard. A fact is a command output, a file path, or a config value. A fact you cannot establish (API refused, host config lives outside the repo, no signal either way) is recorded as `unknown`. An unknown that a rule depends on becomes a question in Phase C; an unknown that only feeds the header is written into the header as unknown and asked about nowhere. Never fill an unknown with the likely answer.
+Run `scripts/facts.sh <repo root>` (beside this file) once; it prints every fact the references' **Facts** sections ask for, read-only, as labelled lines, with `unknown (<reason>)` wherever the API or the tree gave no answer. Then read the **Facts** section of each selected standard to interpret those lines; run a command by hand only for a line the script marked unknown for a reason you can fix locally (a missing fetch, a wrong directory). A fact is a command output, a file path, or a config value. A fact you cannot establish (API refused, host config lives outside the repo, no signal either way) is recorded as `unknown`. An unknown that a rule depends on becomes a question in Phase C; an unknown that only feeds the header is written into the header as unknown and asked about nowhere. Never fill an unknown with the likely answer.
 
 ## Phase C: Decide
 

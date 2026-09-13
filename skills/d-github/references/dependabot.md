@@ -8,7 +8,7 @@ Every GitHub repo gets a `.github/dependabot.yml` that someone chose, because th
 
 ## Facts
 
-Record each one as a value with the command or path that produced it. `unknown` is a valid value.
+`scripts/facts.sh` prints all of these under its `repo`, `ecosystems`, `deploy signals`, `actions`, `security and protection`, `docker`, and `commits` sections; the commands below are what it runs, kept here so a line it marks unknown can be re-run by hand. Record each one as a value with the command or path that produced it. `unknown` is a valid value.
 
 1. **Repo.** `OWNER/REPO` from `git remote get-url origin`; default branch from `gh repo view OWNER/REPO --json defaultBranchRef -q .defaultBranchRef.name`, or when the API cannot see the repo, from `git symbolic-ref refs/remotes/origin/HEAD` or the branch the CI `push` trigger names. This is the one fact where tree evidence stands in for the API.
 2. **Ecosystems present.** `git ls-files` against the manifest table below. One entry per ecosystem per directory; the `directory` value starts with `/` and is relative to the repo root (`/web`, not `web/`). A manifest whose ecosystem is not in the verified-keys table is a follow-up, not an entry.
