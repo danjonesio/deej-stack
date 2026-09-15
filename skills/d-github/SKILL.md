@@ -1,7 +1,7 @@
 ---
 name: d-github
-description: "Bring a GitHub repo up to Dan's standing repo standards: a Dependabot config shaped around whether a merge to the default branch deploys, and a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion). Use for /d-github, 'set up dependabot', 'protect main', 'branch protection', 'ruleset', 'standard repo setup', 'review our dependabot config', or whenever you notice a repo whose origin is on github.com has no .github/dependabot.yml or no .github/rulesets/ while working on its CI, dependencies, branches, or security settings: offer this skill before touching those by hand."
-argument-hint: [standard name] [review]
+description: "Bring a GitHub repo up to Dan's standing repo standards: a Dependabot config shaped around whether a merge to the default branch deploys, a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on, plus a CI job and pre-commit hook that grep for private hostnames kept out of the tree). Use for /d-github, 'set up dependabot', 'protect main', 'branch protection', 'ruleset', 'secret scanning', 'push protection', 'private patterns', 'before making this public', 'standard repo setup', 'review our dependabot config', or whenever you notice a repo whose origin is on github.com has no .github/dependabot.yml, no .github/rulesets/, or is public with no .github/workflows/private-patterns.yml while working on its CI, dependencies, branches, or security settings: offer this skill before touching those by hand."
+argument-hint: [standard name] [review|publish]
 ---
 
 # GitHub standards
@@ -15,6 +15,7 @@ You apply the standards in the table below to the repo you are in. Each standard
 |---|---|---|
 | Dependabot | `.github/dependabot.yml` is missing, or the ask says `review` | [`references/dependabot.md`](references/dependabot.md) |
 | Branch protection | the default branch has no active ruleset requiring a pull request, or the ask says `review` | [`references/branch-protection.md`](references/branch-protection.md) |
+| Secret protection | the repo is public and push protection is off or `.github/workflows/private-patterns.yml` is missing, or the ask says `review` or `publish` | [`references/secret-protection.md`](references/secret-protection.md) |
 
 ## Harness
 
@@ -38,7 +39,7 @@ Open a todo list with one entry per phase.
 ## Phase A: Scope
 
 1. `git remote get-url origin` must name a github.com repo; take `OWNER/REPO` from it. Anything else: stop and say the repo is not on GitHub. Nothing in the table applies elsewhere. If `gh repo view OWNER/REPO` cannot see the repo (not pushed yet, private to another account, `gh` not logged in), carry on: every API-sourced fact is `unknown`, the reply says so once, and you do not retry or change auth.
-2. Pick the standards. A standard named in the ask runs alone. Otherwise every row whose "applies when" holds runs; rows already met are reported as met in one line and skipped, and follow-ups their earlier run left in a file header are not re-reported.
+2. Pick the standards. A standard named in the ask runs alone. Otherwise every row whose "applies when" holds runs; rows already met are reported as met in one line and skipped, and follow-ups their earlier run left in a file header are not re-reported. A `publish` ask runs every standard that applies as if the repo were public already; what that adds is defined in [`references/secret-protection.md`](references/secret-protection.md).
 3. State in one line which standards run and why before reading anything else.
 
 ## Phase B: Check
@@ -53,7 +54,7 @@ Apply the **Rules** section of each selected standard to its facts. Collect ever
 
 Write the file each standard's **Output** section specifies. Where the format takes comments, the header carries the reasoning with the fact behind every decision, so the next reader does not have to re-derive it; where it does not (JSON), the reasoning is the reply and the commit message. Syntax-check with whatever parser the machine has (`python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1]))' <file>` for YAML when PyYAML is present, `python3 -m json.tool <file>` for JSON; otherwise say the check was skipped).
 
-A standard whose real output is a repository setting (a ruleset) still writes its file to the tree as the record, and applying it is one of the Phase C questions; the file goes in first so the setting can be recreated from the repo alone. Commit, push, or open a PR only if the ask says so. Otherwise leave the file in the working tree and give the commit message in the reply. `review` mode writes nothing: it reports the differences between the existing file and the standard, and the user decides.
+A standard whose real output is a repository setting (a ruleset) still writes its file to the tree as the record, and applying it is one of the Phase C questions; the file goes in first so the setting can be recreated from the repo alone. Commit, push, or open a PR only if the ask says so. Otherwise leave the file in the working tree and give the commit message in the reply. `review` mode writes nothing: it reports the differences between the existing file and the standard, and the user decides. `publish` mode writes as normal, then runs the history scan its reference defines and reports the hits; it never rewrites history.
 
 ## Phase E: Deliver
 
