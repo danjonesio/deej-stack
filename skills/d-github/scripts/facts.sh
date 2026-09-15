@@ -157,11 +157,55 @@ if [ "$API" = yes ]; then
   else
     say "plan" "irrelevant (public repo: rulesets available on every plan)"
   fi
+  sa=$(gh api "repos/$SLUG" -q '.security_and_analysis | to_entries | map("\(.key)=\(.value.status)") | join(" ")' 2>/dev/null)
+  say "security-and-analysis" "${sa:-unknown (api error, or token lacks admin)}"
+  if out=$(gh secret list -R "$SLUG" 2>/dev/null); then
+    say "private-patterns-secret" "$(printf '%s\n' "$out" | grep -q '^PRIVATE_PATTERNS' && echo present || echo absent)"
+  else
+    say "private-patterns-secret" "unknown (gh secret list failed; needs admin)"
+  fi
 else
-  for k in vulnerability-alerts automated-security-fixes classic-protection repo-rulesets rules-in-force merge-methods owner-type collaborators visibility plan; do say "$k" "unknown (api unreachable)"; done
+  for k in vulnerability-alerts automated-security-fixes classic-protection repo-rulesets rules-in-force merge-methods owner-type collaborators visibility plan security-and-analysis private-patterns-secret; do say "$k" "unknown (api unreachable)"; done
 fi
 co=$(ls .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS 2>/dev/null | tr '\n' ' ' | sed 's/ $//'); say "codeowners" "${co:-none}"
 say "rulesets-file" "$([ -f .github/rulesets/default-branch.json ] && echo present || echo absent)"
+
+# ---------- private patterns ----------
+section "private patterns"
+PF="${DEEJ_PRIVATE_PATTERNS:-$HOME/.config/deej-stack/private-patterns}"
+if [ -r "$PF" ]; then
+  say "user-pattern-file" "present: $PF ($(grep -cvE '^[[:space:]]*(#|$)' "$PF") patterns)"
+else
+  say "user-pattern-file" "absent ($PF)"
+fi
+say "script" "$([ -f .github/scripts/private-patterns.sh ] && echo present || echo absent)"
+say "workflow" "$([ -f .github/workflows/private-patterns.yml ] && echo present || echo absent)"
+if [ -f .pre-commit-config.yaml ]; then
+  say "pre-commit-config" "present, hook $(grep -q 'id: private-patterns' .pre-commit-config.yaml && echo present || echo absent)"
+else
+  say "pre-commit-config" "absent"
+fi
+say "pre-commit-binary" "$(command -v pre-commit >/dev/null 2>&1 && echo present || echo absent)"
+if [ "$GH" = yes ]; then
+  tag=$(gh api repos/actions/checkout/releases/latest -q .tag_name 2>/dev/null)
+  sha=$([ -n "$tag" ] && gh api "repos/actions/checkout/commits/$tag" -q .sha 2>/dev/null)
+  say "checkout-latest" "${tag:-unknown} ${sha:-unknown (api error)}"
+else
+  say "checkout-latest" "unknown (gh unavailable)"
+fi
+if [ -r "$PF" ]; then
+  pats=$(mktemp); grep -vE '^[[:space:]]*(#|$)' "$PF" > "$pats"
+  if [ -s "$pats" ]; then
+    hits=$(git grep -InE -f "$pats" -- . ':!.github/scripts/private-patterns.sh' ':!.pre-commit-config.yaml' 2>/dev/null | cut -d: -f1,2)
+    say "tree-hits" "$(printf '%s' "$hits" | grep -c .) (path:line only; matched text is never printed)"
+    [ -n "$hits" ] && printf '%s\n' "$hits" | head -20 | sed 's/^/  /'
+  else
+    say "tree-hits" "unknown (pattern file has no patterns)"
+  fi
+  rm -f "$pats"
+else
+  say "tree-hits" "unknown (no user pattern file)"
+fi
 
 # ---------- docker ----------
 section "docker"
