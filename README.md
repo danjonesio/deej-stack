@@ -50,7 +50,7 @@ then **Developer: Reload Window**. A marketplace install of the same name takes 
 |---|---|
 | [`/d-plan`](./skills/d-plan/SKILL.md) | you're about to build a feature, an app, or a change that's more than a one-file edit, and you want the plan stress-tested before any code exists. |
 | [`/d-implement`](./skills/d-implement/SKILL.md) | you have a plan from `/d-plan` and want it built step by step, each step verified and committed, with a review panel on the finished diff. |
-| [`/d-github`](./skills/d-github/SKILL.md) | a repo on GitHub is missing one of the standing standards, or you want what it has checked against them. Today: a Dependabot config (version updates where merges deploy nothing, grouped security-only updates where they do) and a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion). Single agent, no panel; the model may offer it on its own. Standards to come land as rows in its table. |
+| [`/d-github`](./skills/d-github/SKILL.md) | a repo on GitHub is missing one of the standing standards, or you want what it has checked against them. Today: a Dependabot config (version updates where merges deploy nothing, grouped security-only updates where they do), a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on; a CI job and pre-commit hook that grep for private hostnames from a pattern list that never enters the tree; `publish` scans history before a repo goes public). Single agent, no panel; the model may offer it on its own. Standards to come land as rows in its table. |
 
 ## Layout
 
@@ -69,7 +69,7 @@ AGENTS.md                    conventions; CLAUDE.md imports it
 `/d-github` is the one skill the model may invoke unprompted. Its description covers the mid-task case (you are editing CI or dependencies in a repo with no Dependabot config). To have it offered on entering such a repo at all, add one line to `~/.claude/CLAUDE.md`:
 
 ```
-In a repo whose origin is on github.com and that has no .github/dependabot.yml or no .github/rulesets/, offer /deej-stack:d-github once, then drop it if declined.
+In a repo whose origin is on github.com and that has no .github/dependabot.yml, no .github/rulesets/, or is public with no .github/workflows/private-patterns.yml, offer /deej-stack:d-github once, then drop it if declined.
 ```
 
 Cursor's equivalent is a User Rule (Settings → Rules) with the same sentence and `/d-github`.

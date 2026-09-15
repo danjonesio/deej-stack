@@ -122,3 +122,4 @@ Reply in chat with at most ten lines: the branch and base, steps built with comm
 - Never fabricate or predict a pending reviewer's result. If the result has not arrived, the reviewer is still running.
 - The plan is the spec. Improve it by recording a deviation or a "noticed, not done" line, never by quietly doing something else.
 - The default panel is the default. The user can trim it ("just security") or skip it ("no review"). Record every deviation in the review table.
+- A hostname, URL, or credential that is not already in the tree goes in as an environment variable or a placeholder, never a literal. Public repos carry a private-patterns check (`/d-github`); a literal fails it after the commit, a placeholder never reaches it.
