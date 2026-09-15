@@ -77,16 +77,15 @@ Three files, verbatim, with `OWNER/REPO`, `<default>`, `<sha>`, `<tag>`, and `<d
 set -u
 self=".github/scripts/private-patterns.sh"
 tmp=$(mktemp); trap 'rm -f "$tmp"' EXIT
+f="${DEEJ_PRIVATE_PATTERNS:-$HOME/.config/deej-stack/private-patterns}"
 if [ -n "${PRIVATE_PATTERNS:-}" ]; then
-  printf '%s\n' "$PRIVATE_PATTERNS"
+  printf '%s\n' "$PRIVATE_PATTERNS" | grep -vE '^[[:space:]]*(#|$)' > "$tmp"
+elif [ -r "$f" ]; then
+  grep -vE '^[[:space:]]*(#|$)' "$f" > "$tmp"
 else
-  f="${DEEJ_PRIVATE_PATTERNS:-$HOME/.config/deej-stack/private-patterns}"
-  if [ ! -r "$f" ]; then
-    echo "::notice::private-patterns: no patterns ($f missing, PRIVATE_PATTERNS unset); nothing checked"
-    exit 0
-  fi
-  cat "$f"
-fi | grep -vE '^[[:space:]]*(#|$)' > "$tmp"
+  echo "::notice::private-patterns: no patterns ($f missing, PRIVATE_PATTERNS unset); nothing checked"
+  exit 0
+fi
 if [ ! -s "$tmp" ]; then
   echo "::notice::private-patterns: pattern list is empty; nothing checked"
   exit 0

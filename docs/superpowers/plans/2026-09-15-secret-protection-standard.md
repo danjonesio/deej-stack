@@ -31,7 +31,7 @@
 **Interfaces:**
 - Produces: the section names `## Applies when`, `## Facts`, `## Rules`, `## Output`, `## Verified keys` that SKILL.md Phase B–D refer to; the fact labels `security-and-analysis`, `private-patterns-secret`, `user-pattern-file`, `script`, `workflow`, `pre-commit-config`, `pre-commit-binary`, `checkout-latest`, `tree-hits` that Task 2 prints.
 
-- [ ] **Step 1: Write the file**
+- [x] **Step 1: Write the file**
 
 ```markdown
 # Standard: Secret protection
@@ -108,16 +108,15 @@ Three files, verbatim, with `OWNER/REPO`, `<default>`, `<sha>`, `<tag>`, and `<d
     set -u
     self=".github/scripts/private-patterns.sh"
     tmp=$(mktemp); trap 'rm -f "$tmp"' EXIT
+    f="${DEEJ_PRIVATE_PATTERNS:-$HOME/.config/deej-stack/private-patterns}"
     if [ -n "${PRIVATE_PATTERNS:-}" ]; then
-      printf '%s\n' "$PRIVATE_PATTERNS"
+      printf '%s\n' "$PRIVATE_PATTERNS" | grep -vE '^[[:space:]]*(#|$)' > "$tmp"
+    elif [ -r "$f" ]; then
+      grep -vE '^[[:space:]]*(#|$)' "$f" > "$tmp"
     else
-      f="${DEEJ_PRIVATE_PATTERNS:-$HOME/.config/deej-stack/private-patterns}"
-      if [ ! -r "$f" ]; then
-        echo "::notice::private-patterns: no patterns ($f missing, PRIVATE_PATTERNS unset); nothing checked"
-        exit 0
-      fi
-      cat "$f"
-    fi | grep -vE '^[[:space:]]*(#|$)' > "$tmp"
+      echo "::notice::private-patterns: no patterns ($f missing, PRIVATE_PATTERNS unset); nothing checked"
+      exit 0
+    fi
     if [ ! -s "$tmp" ]; then
       echo "::notice::private-patterns: pattern list is empty; nothing checked"
       exit 0
@@ -183,12 +182,12 @@ Custom secret-scanning patterns: Secret Protection on org-owned repos only, whic
 Pre-commit `language: script`: `entry` is a path relative to the repo root, run directly; the hook receives staged file paths as arguments. Verified against the pre-commit docs on 2026-09-13.
 ```
 
-- [ ] **Step 2: Check the four sections and the table render**
+- [x] **Step 2: Check the four sections and the table render**
 
 Run: `grep -nE '^## ' skills/d-github/references/secret-protection.md`
 Expected: `Applies when`, `Facts`, `Rules`, `Output`, `Verified keys` in that order.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add skills/d-github/references/secret-protection.md
@@ -204,7 +203,7 @@ git commit -m "d-github: secret-protection reference (toggles, private-patterns 
 - Consumes: `$API`, `$SLUG`, `say`, `section` from the top of the script.
 - Produces: the labels named in Task 1's Facts.
 
-- [ ] **Step 1: Add the API-side facts inside the `if [ "$API" = yes ]` block of `security and protection`**
+- [x] **Step 1: Add the API-side facts inside the `if [ "$API" = yes ]` block of `security and protection`**
 
 After the `say "rulesets-file"` line is too late (it is outside the block); insert after the `say "plan"` lines and before the `else`:
 
@@ -220,7 +219,7 @@ After the `say "rulesets-file"` line is too late (it is outside the block); inse
 
 And add `security-and-analysis private-patterns-secret` to the `for k in ...` unknown loop in the `else` branch.
 
-- [ ] **Step 2: Add the `private patterns` section before `# ---------- docker ----------`**
+- [x] **Step 2: Add the `private patterns` section before `# ---------- docker ----------`**
 
 ```bash
 # ---------- private patterns ----------
@@ -261,12 +260,12 @@ else
 fi
 ```
 
-- [ ] **Step 3: Syntax-check and run on this repo**
+- [x] **Step 3: Syntax-check and run on this repo**
 
 Run: `bash -n skills/d-github/scripts/facts.sh && skills/d-github/scripts/facts.sh . | sed -n '/## security/,/## docker/p'`
 Expected: a `security-and-analysis:` line listing five `key=status` pairs, `private-patterns-secret: absent`, and a `## private patterns` section with `user-pattern-file: absent (...)`, `checkout-latest: v7.0.1 3d3c42e5aac5ba805825da76410c181273ba90b1`, `tree-hits: unknown (no user pattern file)`.
 
-- [ ] **Step 4: Run with a scratch pattern file to prove the hit path**
+- [x] **Step 4: Run with a scratch pattern file to prove the hit path**
 
 ```bash
 printf '# test\n\nrefreshsurplus\n' > "$SCRATCH/patterns"
@@ -274,7 +273,7 @@ DEEJ_PRIVATE_PATTERNS="$SCRATCH/patterns" skills/d-github/scripts/facts.sh . | s
 ```
 Expected: `user-pattern-file: present: ... (1 patterns)` and `tree-hits: N` with `path:line` entries indented below, no matched text.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add skills/d-github/scripts/facts.sh
@@ -286,7 +285,7 @@ git commit -m "d-github: facts for secret protection (toggles, secret, pattern f
 **Files:**
 - None in this repo. Scratch only: `$SCRATCH/repo`.
 
-- [ ] **Step 1: Build the scratch repo from the reference's script block**
+- [x] **Step 1: Build the scratch repo from the reference's script block**
 
 ```bash
 R="$SCRATCH/repo"; rm -rf "$R"; mkdir -p "$R/.github/scripts"; cd "$R"; git init -q
@@ -297,7 +296,7 @@ printf 'hello\n' > clean.md; printf 'see https://foo.example.ts.net/x\n' > leak.
 git add -A; git -c user.email=t@t -c user.name=t commit -qm init
 ```
 
-- [ ] **Step 2: Run the four cases**
+- [x] **Step 2: Run the four cases**
 
 ```bash
 unset PRIVATE_PATTERNS DEEJ_PRIVATE_PATTERNS
@@ -309,7 +308,7 @@ PRIVATE_PATTERNS="$(cat $SCRATCH/p)" .github/scripts/private-patterns.sh leak.md
 ```
 Expected: `no-file exit=0` with a notice; `tree exit=1` printing `leak.md:1` only; `clean-file exit=0`; `env-leak-file exit=1` printing `leak.md:1`. The URL text never appears.
 
-- [ ] **Step 3: Run the pre-commit hook for real**
+- [x] **Step 3: Run the pre-commit hook for real**
 
 ```bash
 awk '/^`.pre-commit-config.yaml`/{f=1;next} f&&/^After the files land/{exit} f&&/^    /{sub(/^    /,"");print}' \
@@ -326,7 +325,7 @@ No commit in this repo for this task. Any fix goes into Task 1's file with a com
 **Files:**
 - Modify: `skills/d-github/SKILL.md` (frontmatter description and argument-hint; the standards table; Phase A step 2; Phase D's `review` sentence)
 
-- [ ] **Step 1: Frontmatter**
+- [x] **Step 1: Frontmatter**
 
 Replace the `description` with:
 
@@ -335,7 +334,7 @@ description: "Bring a GitHub repo up to Dan's standing repo standards: a Dependa
 argument-hint: [standard name] [review|publish]
 ```
 
-- [ ] **Step 2: Table row**
+- [x] **Step 2: Table row**
 
 Add after the Branch protection row:
 
@@ -343,13 +342,13 @@ Add after the Branch protection row:
 | Secret protection | the repo is public and push protection is off or `.github/workflows/private-patterns.yml` is missing, or the ask says `review` or `publish` | [`references/secret-protection.md`](references/secret-protection.md) |
 ```
 
-- [ ] **Step 3: Phase A step 2 and Phase D**
+- [x] **Step 3: Phase A step 2 and Phase D**
 
 In Phase A step 2, append: `A \`publish\` ask runs every standard that applies as if the repo were public already; what that adds is defined in [\`references/secret-protection.md\`](references/secret-protection.md).`
 
 In Phase D, after the `review` sentence, append: `\`publish\` mode writes as normal, then runs the history scan its reference defines and reports the hits; it never rewrites history.`
 
-- [ ] **Step 4: Validate and commit**
+- [x] **Step 4: Validate and commit**
 
 Run: `claude plugin validate .`
 Expected: passes.
@@ -366,7 +365,7 @@ git commit -m "d-github: add secret-protection row, publish ask, triggers"
 - Modify: `/home/danjones/.claude/CLAUDE.md` (the same trigger line)
 - Modify: `skills/d-implement/SKILL.md` Rules section
 
-- [ ] **Step 1: README row**
+- [x] **Step 1: README row**
 
 Replace the "Today:" sentence in the `/d-github` row with:
 
@@ -374,7 +373,7 @@ Replace the "Today:" sentence in the `/d-github` row with:
 Today: a Dependabot config (version updates where merges deploy nothing, grouped security-only updates where they do), a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on; a CI job and pre-commit hook that grep for private hostnames from a pattern list that never enters the tree; `publish` scans history before a repo goes public).
 ```
 
-- [ ] **Step 2: Trigger line, both places**
+- [x] **Step 2: Trigger line, both places**
 
 Replace the sentence in README.md and in `~/.claude/CLAUDE.md` with:
 
@@ -382,7 +381,7 @@ Replace the sentence in README.md and in `~/.claude/CLAUDE.md` with:
 In a repo whose origin is on github.com and that has no .github/dependabot.yml, no .github/rulesets/, or is public with no .github/workflows/private-patterns.yml, offer /deej-stack:d-github once, then drop it if declined.
 ```
 
-- [ ] **Step 3: d-implement rule**
+- [x] **Step 3: d-implement rule**
 
 Append to the Rules list in `skills/d-implement/SKILL.md`:
 
@@ -390,7 +389,7 @@ Append to the Rules list in `skills/d-implement/SKILL.md`:
 - A hostname, URL, or credential that is not already in the tree goes in as an environment variable or a placeholder, never a literal. Public repos carry a private-patterns check (`/d-github`); a literal fails it after the commit, a placeholder never reaches it.
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md skills/d-implement/SKILL.md
@@ -402,7 +401,7 @@ git commit -m "README, d-implement: secret-protection trigger line and no-litera
 **Files:**
 - Modify: `.claude-plugin/plugin.json:3`, `.cursor-plugin/plugin.json:4`
 
-- [ ] **Step 1: Bump**
+- [x] **Step 1: Bump**
 
 ```bash
 sed -i 's/"version": "0.6.0"/"version": "0.7.0"/' .claude-plugin/plugin.json .cursor-plugin/plugin.json
@@ -410,14 +409,14 @@ grep -n version .claude-plugin/plugin.json .cursor-plugin/plugin.json
 ```
 Expected: both `0.7.0`.
 
-- [ ] **Step 2: Validate everything**
+- [x] **Step 2: Validate everything**
 
 ```bash
 claude plugin validate . && bash -n skills/d-github/scripts/facts.sh && skills/d-github/scripts/facts.sh . >/dev/null && echo ok
 ```
 Expected: `ok`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .claude-plugin/plugin.json .cursor-plugin/plugin.json
