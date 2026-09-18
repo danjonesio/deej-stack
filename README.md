@@ -67,7 +67,7 @@ AGENTS.md                    conventions; CLAUDE.md imports it
 
 ## Hooks
 
-They load with the plugin in both harnesses, so a user-scope install runs them in every project; nothing is added to a repo, to `settings.json`, or to `~/.cursor/hooks.json`. The scripts are shared; `hooks/hooks.json` wires them into Claude Code and `hooks/hooks-cursor.json` into Cursor, where the skill is offered as `/d-github`. Both have been watched denying a push to `main`: Claude Code in a live session, Cursor in a local session. Cursor **Cloud Agents do not run plugin hooks**, so neither the offer nor the push guard exists there; what protects `main` from a cloud agent is the repo's GitHub ruleset, which `/d-github` sets up. After installing in Cursor, **Customize → Hooks** should list all three.
+They load with the plugin in both harnesses, so a user-scope install runs them in every project; nothing is added to a repo, to `settings.json`, or to `~/.cursor/hooks.json`. The scripts are shared; `hooks/hooks.json` wires them into Claude Code and `hooks/hooks-cursor.json` into Cursor, where the skill is offered as `/d-github`. Both have been watched denying a push to `main`: Claude Code in a live session, Cursor in a local session. Cursor **Cloud Agents do not run plugin hooks**, so neither the offer nor the push guard exists there; what protects `main` from a cloud agent is the repo's GitHub ruleset, which `/d-github` sets up. After installing in Cursor, **Customize → Hooks** should list two entries: one `sessionStart`, one `beforeShellExecution`.
 
 | hook | event | what it does |
 |---|---|---|
