@@ -79,6 +79,40 @@ They load with the plugin in both harnesses, so a user-scope install runs them i
 
 `hooks/test.sh` runs every case above against throwaway repos. Needs `python3`, `jq`, `git`.
 
+## Private patterns
+
+Hostnames, internal domains, and URL fragments that must never reach a public repo. There is one list per machine, not per project: it lives in your home directory and nowhere else, and two things read it. (A shell or direnv that sets `DEEJ_PRIVATE_PATTERNS` is the only per-project override.)
+
+**1. Write the list.** One POSIX extended regex per line, `#` comments allowed. Use your editor, not a chat window or a PR.
+
+```bash
+mkdir -p ~/.config/deej-stack && chmod 700 ~/.config/deej-stack
+$EDITOR ~/.config/deej-stack/private-patterns && chmod 600 ~/.config/deej-stack/private-patterns
+```
+
+```
+# private patterns: never commit this file
+tail1a2b3\.ts\.net
+\.corp\.example\.com
+hooks\.slack\.com/services/
+```
+
+Escape dots (`\.`), or `a.b` also matches `aXb`. Prefer the shared suffix (the tailnet name, the internal domain) over single hosts, so new machines are covered without an edit. Matching ignores case, so one spelling per value is enough. `DEEJ_PRIVATE_PATTERNS=/other/path` overrides the location.
+
+**2. That is all the git hook needs.** The machine-wide `pre-push` hook (installed by `/d-github`, or `skills/d-github/scripts/install-git-hooks.sh`) reads the file on every push and refuses one that would publish a match to a public remote. It prints commit and path, never the matched text.
+
+**3. Give each public repo's CI a copy.** The `private-patterns` workflow reads a repository secret, which nobody can read back, you included:
+
+```bash
+gh secret set PRIVATE_PATTERNS -R OWNER/REPO < ~/.config/deej-stack/private-patterns
+```
+
+Or run `/d-github` in the repo: with the file present it offers to set the secret, and lists any `path:line` in the tree that already matches. The secret is per repository; for repos owned by an organisation, `gh secret set PRIVATE_PATTERNS --org ORG --visibility all < ~/.config/deej-stack/private-patterns` sets it once for all of them. The file is the source of truth; after editing it, set the secret again wherever it lives.
+
+**4. Before making a private repo public:** `/d-github publish` also greps the whole history.
+
+Check what is in place with `skills/d-github/scripts/facts.sh` in any repo: `user-pattern-file`, `pre-push-hook`, `private-patterns-secret`, `tree-hits`.
+
 ## Later
 
 Ideas not built yet, kept here so they don't need re-deriving.

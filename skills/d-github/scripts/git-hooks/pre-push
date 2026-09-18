@@ -4,7 +4,8 @@
 # runs for every push from every clone, whoever typed it: you, an agent, an IDE.
 #
 # Patterns: the file named by $DEEJ_PRIVATE_PATTERNS, else ~/.config/deej-stack/private-patterns. One
-#   POSIX extended regex per line; '#' comments and blank lines are ignored. No file: nothing is checked.
+#   POSIX extended regex per line, matched case-insensitively (hostnames are, and a stray capital
+#   must not slip through); '#' comments and blank lines are ignored. No file: nothing is checked.
 # Scanned: only what this push would publish: lines added by the outgoing commits, the paths they
 #   touch, and their commit messages. Content the remote already has is not re-checked.
 # Visibility is looked up only when there is a hit, so a clean push costs no network call. GitHub
@@ -57,7 +58,7 @@ while read -r _ lsha _ rsha; do
 done <<< "$input"
 
 [ -s "$tmp/texts" ] || chain "$@"
-grep -anE -f "$tmp/pats" "$tmp/texts" | cut -d: -f1 > "$tmp/nums"
+grep -aniE -f "$tmp/pats" "$tmp/texts" | cut -d: -f1 > "$tmp/nums"
 [ -s "$tmp/nums" ] || chain "$@"
 hits=$(awk 'NR == FNR { want[$1]; next } FNR in want' "$tmp/nums" "$tmp/locs" | sort -u)
 

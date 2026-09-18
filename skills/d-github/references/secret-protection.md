@@ -20,7 +20,7 @@ Private repo: user-owned private repos get no server-side secret scanning outsid
 4. **Files in the tree.** `.github/scripts/private-patterns.sh`, `.github/workflows/private-patterns.yml`, and whether a `.pre-commit-config.yaml` names the `private-patterns` hook (earlier versions of this standard wrote one).
 5. **Machine hook.** `git config --global --get core.hooksPath` (`global-hooks-path`); whether `pre-push` in that directory is byte-identical to `scripts/git-hooks/pre-push` (`pre-push-hook`: `current`, `outdated`, `absent`); `git config --local --get core.hooksPath` (`local-hooks-path`: husky and similar set it, and a local value hides the global directory from this clone).
 6. **Latest checkout action.** `gh api repos/actions/checkout/releases/latest -q .tag_name`, then `gh api repos/actions/checkout/commits/<tag> -q .sha` for the full commit SHA that tag resolves to.
-7. **Tree hits.** With Fact 3 present: `git grep -InE -f <patterns>` over the tree, excluding the script and the pre-commit config, as a count and up to twenty `path:line` entries. The matched text is never printed; the fact sheet may be pasted somewhere.
+7. **Tree hits.** With Fact 3 present: `git grep -IniE -f <patterns>` over the tree, excluding the script and the pre-commit config, as a count and up to twenty `path:line` entries. The matched text is never printed; the fact sheet may be pasted somewhere.
 8. **Fork exposure.** Whether the workflow runs on `pull_request` (Output below): a fork's PR sees an empty secret.
 
 ## Rules
@@ -35,11 +35,11 @@ JSON
 
 A refusal for one field (422 naming it) means the plan does not include it: record it as unavailable on the plan and re-send without it. `secret_scanning_validity_checks` and `secret_scanning_ai_detection` need Secret Protection on a Team or Enterprise plan; leave them alone and do not ask. Fact 1 unknown: put the command in the reply, run nothing.
 
-**The pattern list.** Fact 3 absent: ask once, in the same question call as everything else, for the hostnames, domains, and URL fragments that must never appear in a public repo, one per line, with the default "save to `~/.config/deej-stack/private-patterns`". Write that file from the answer (create the directory), one ERE per line, a `#` header line saying what it is. The facts script never writes it. Fact 3 present with zero patterns: say so and skip the secret and the files; a grep against nothing guards nothing.
+**The pattern list.** Fact 3 absent: ask once, in the same question call as everything else, for the hostnames, domains, and URL fragments that must never appear in a public repo, one per line, with the default "save to `~/.config/deej-stack/private-patterns`". Write that file from the answer (create the directory), one ERE per line, a `#` header line saying what it is. Every grep in this standard matches case-insensitively, so one spelling per value is enough. The facts script never writes it. Fact 3 present with zero patterns: say so and skip the secret and the files; a grep against nothing guards nothing.
 
 **The repository secret.** Fact 2 absent and Fact 3 present with patterns: a question, recommended answer "set it now", action `gh secret set PRIVATE_PATTERNS -R OWNER/REPO < <user file>`. Fact 2 present in `review` mode: report whether it exists, nothing more; its value cannot be read back, so say the user file is the source of truth and re-set it after editing.
 
-**Files.** Write the two files in Output when the workflow (Fact 4) is absent. A `.pre-commit-config.yaml` that names the `private-patterns` hook is left alone and listed as a follow-up: the machine hook supersedes it, and removing it is the user's call. Pin `actions/checkout` to the SHA from Fact 6 with the tag in a trailing comment; Fact 6 unknown: write `@v7` and add a follow-up line to pin it.
+**Files.** Write the two files in Output when the workflow (Fact 4) is absent. A `.github/scripts/private-patterns.sh` that differs from the Output version (runs before 2026-09-18 wrote a case-sensitive one) is rewritten, and the reply says so. A `.pre-commit-config.yaml` that names the `private-patterns` hook is left alone and listed as a follow-up: the machine hook supersedes it, and removing it is the user's call. Pin `actions/checkout` to the SHA from Fact 6 with the tag in a trailing comment; Fact 6 unknown: write `@v7` and add a follow-up line to pin it.
 
 **Machine hook (Fact 5).** It is installed once per machine, not per repo, so it is checked on every run, private repos included.
 
@@ -56,7 +56,7 @@ What the hook scans, how it decides visibility, and its bypass are in the header
 **History scan (`publish` only).**
 
 ```bash
-git grep -InE -f <patterns> $(git rev-list --all) | cut -d: -f1,2,3 | sort -u
+git grep -IniE -f <patterns> $(git rev-list --all) | cut -d: -f1,2,3 | sort -u
 ```
 
 reported as commit, path, line, capped at fifty lines with the total. Never rewrite history. When there are hits, the reply says: the only cures are a history rewrite (`git filter-repo`, every clone re-cloned, every fork keeps the old objects) or a fresh repo from a clean tree, and that GitHub caches objects from deleted commits for a while after either.
@@ -80,8 +80,8 @@ Two files, verbatim, with `OWNER/REPO`, `<default>`, `<sha>`, `<tag>`, and `<dat
 # private-patterns: fail when a private pattern appears in the tree. Written by /d-github on <date>.
 # Patterns come from $PRIVATE_PATTERNS (CI: the repository secret), else the file named by
 # $DEEJ_PRIVATE_PATTERNS, else ~/.config/deej-stack/private-patterns. One POSIX extended regex
-# per line; '#' comments and blank lines are ignored. With file arguments it greps those files;
-# without, the whole tree. Prints path:line per hit, never the matched text.
+# per line, matched case-insensitively; '#' comments and blank lines are ignored. With file
+# arguments it greps those files; without, the whole tree. Prints path:line per hit, never the matched text.
 set -u
 self=".github/scripts/private-patterns.sh"
 tmp=$(mktemp); trap 'rm -f "$tmp"' EXIT
@@ -99,9 +99,9 @@ if [ ! -s "$tmp" ]; then
   exit 0
 fi
 if [ $# -gt 0 ]; then
-  hits=$(grep -IHnE -f "$tmp" -- "$@" 2>/dev/null | cut -d: -f1,2)
+  hits=$(grep -IHniE -f "$tmp" -- "$@" 2>/dev/null | cut -d: -f1,2)
 else
-  hits=$(git grep -InE -f "$tmp" -- . ":!$self" ':!.pre-commit-config.yaml' | cut -d: -f1,2)
+  hits=$(git grep -IniE -f "$tmp" -- . ":!$self" ':!.pre-commit-config.yaml' | cut -d: -f1,2)
 fi
 [ -z "$hits" ] && exit 0
 printf 'private-patterns: hit at\n%s\n' "$hits" >&2

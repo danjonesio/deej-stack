@@ -205,7 +205,7 @@ fi
 if [ -r "$PF" ]; then
   pats=$(mktemp); grep -vE '^[[:space:]]*(#|$)' "$PF" > "$pats"
   if [ -s "$pats" ]; then
-    hits=$(git grep -InE -f "$pats" -- . ':!.github/scripts/private-patterns.sh' ':!.pre-commit-config.yaml' 2>/dev/null | cut -d: -f1,2)
+    hits=$(git grep -IniE -f "$pats" -- . ':!.github/scripts/private-patterns.sh' ':!.pre-commit-config.yaml' 2>/dev/null | cut -d: -f1,2)
     say "tree-hits" "$(printf '%s' "$hits" | grep -c .) (path:line only; matched text is never printed)"
     [ -n "$hits" ] && printf '%s\n' "$hits" | head -20 | sed 's/^/  /'
   else
