@@ -4,7 +4,7 @@ The default branch of every GitHub repo is covered by a ruleset that someone cho
 
 ## Applies when
 
-The default branch has no active ruleset with a `pull_request` rule (Fact 2), or the ask says `review`. When the API cannot see the repo, the absence of `.github/rulesets/default-branch.json` stands in.
+The default branch has no active ruleset with a `pull_request` rule (Fact 2); or it has one and the checks it requires no longer match the checks that run on every PR (Fact 4, the **Check drift** rule); or the ask says `review`. When the API cannot see the repo, the absence of `.github/rulesets/default-branch.json` stands in, and drift is unknown.
 
 Private repo on a Free plan (Fact 7): rulesets are not enforced there. Write the file so it is ready, apply nothing, and say why in the reply.
 
@@ -13,11 +13,12 @@ Private repo on a Free plan (Fact 7): rulesets are not enforced there. Write the
 `scripts/facts.sh` prints all of these under its `repo`, `actions`, and `security and protection` sections; the commands below are what it runs, kept here so a line it marks unknown can be re-run by hand.
 
 1. **Repo and default branch.** As Dependabot Fact 1, in [`dependabot.md`](dependabot.md).
-2. **Existing rulesets.** `gh api repos/OWNER/REPO/rulesets` for the repo's own; `gh api repos/OWNER/REPO/rules/branches/<default>` for every rule in force on the branch, org-level included. Record each rule type in force and which ruleset it came from.
+2. **Existing rulesets.** `gh api repos/OWNER/REPO/rulesets` for the repo's own; `gh api repos/OWNER/REPO/rules/branches/<default>` for every rule in force on the branch, org-level included. Record each rule type in force and which ruleset it came from (`rules-in-force-on-<default>` prints `type@source#ruleset-id`).
 3. **Classic protection.** `gh api repos/OWNER/REPO/branches/<default>/protection`: 200 with a body means a classic rule exists (record `required_pull_request_reviews`, `required_status_checks`, `enforce_admins`, `allow_force_pushes`, `allow_deletions`); 404 means none.
 4. **Checks that can be required.** Two sources, and the second is the truth:
-   - Workflows: jobs in workflows whose `on:` includes `pull_request`. A job behind a `paths:` filter or an `if:` may not run on a given PR, and a required check that never reports blocks the merge forever; such jobs are recorded as ineligible with the filter that makes them so.
-   - Check-run names as GitHub saw them on the latest default-branch commit: `gh api repos/OWNER/REPO/commits/$(git rev-parse origin/<default> 2>/dev/null || git rev-parse HEAD)/check-runs -q '.check_runs[].name' | sort -u`. The `context` a ruleset requires is this name (the job's `name:` when set, otherwise the job key, with matrix values in brackets), not the workflow name. When this call is unknown, the workflow-derived names stand in, and the reply says to confirm them in the first PR's merge box.
+   - Workflows: jobs in workflows whose `on:` includes `pull_request`. A job behind a workflow `paths:` filter or a job-level `if:` may not run on a given PR, and a required check that never reports blocks the merge forever; such jobs are recorded as ineligible with the filter that makes them so. The fact sheet lists every `if:` line; read the workflow to tell a job-level one from a step-level one, which changes nothing.
+   - What is required today: `required-checks-on-<default>`, the contexts of every `required_status_checks` rule in force, with the ruleset id, its source, and `strict`.
+   - Check-run names as GitHub saw them on the latest default-branch commit: `gh api repos/OWNER/REPO/commits/$(git rev-parse origin/<default> 2>/dev/null || git rev-parse HEAD)/check-runs -q '.check_runs[].name' | sort -u`. The `context` a ruleset requires is this name (the job's `name:` when set, otherwise the job key, with matrix values in brackets), not the workflow name. When this call is unknown, the workflow-derived names stand in, and the reply says to confirm them in the first PR's merge box. `status-contexts-on-<default>` lists commit statuses, which is how checks from outside Actions often report; a required context found there is reporting.
 5. **Merge methods.** `gh repo view OWNER/REPO --json mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed`. Linear history needs squash or rebase allowed, and is free only when merge commits are already off.
 6. **People.** `gh api users/OWNER -q .type` (`User` or `Organization`), `gh api repos/OWNER/REPO/collaborators -q length`, and whether `.github/CODEOWNERS`, `CODEOWNERS`, or `docs/CODEOWNERS` exists.
 7. **Plan and visibility.** `gh repo view OWNER/REPO --json visibility,isPrivate`, then `gh api user -q .plan.name` for a `User` owner or `gh api orgs/OWNER -q .plan.name` for an `Organization`. An empty plan value means the token lacks the scope to read it: unknown. A public repo makes the plan irrelevant; skip the plan call.
@@ -35,7 +36,15 @@ Private repo on a Free plan (Fact 7): rulesets are not enforced there. Write the
 
 **Existing classic protection (Fact 3 is 200).** Report it beside the ruleset, setting by setting, and ask one question: migrate (create the ruleset, then delete the classic rule once Fact 2 shows the ruleset in force), or leave both. Default when the question cannot be asked: create nothing, delete nothing, leave the file and the reply. Fact 3 unknown: the apply line in the reply says to check `Settings → Branches` for a classic rule first and decide migrate or leave both before running the create command.
 
-**Existing ruleset with a `pull_request` rule.** The standard is met. In `review` mode, diff its rules against the list above and report each difference; write nothing.
+**Existing ruleset with a `pull_request` rule.** The shape is met; go on to **Check drift**. In `review` mode, diff its rules against the list above and report each difference; write nothing.
+
+**Check drift.** A ruleset is written once and the CI under it keeps changing, so every run compares `required-checks-on-<default>` with the eligible names from Fact 4. Both directions are one question each, asked only when there is something in them:
+
+- **Eligible, not required** (a job that now runs on every PR): recommended answer "require them", listing the names.
+- **Required, not reporting** (the context is in neither the check-run names nor the status contexts of the latest default-branch commit, and no PR workflow job produces it): recommended answer "drop them", listing the names, because a required check that never reports blocks every merge. Any of those three facts unknown: report the suspicion, ask nothing, change nothing. A required context that still reports but has become ineligible (its job gained a `paths:` or `if:`) is a follow-up line, not a question.
+- Nothing in either: met, one line.
+
+Applying an answer: edit `.github/rulesets/default-branch.json` first (add or remove `{ "context": ... }` entries; `strict_required_status_checks_policy` stays `true`; remove the whole rule with its last context; add the rule when it was absent), then `gh api -X PUT repos/OWNER/REPO/rulesets/<id> --input .github/rulesets/default-branch.json` with the id from `required-checks-on-<default>`, or from the `pull_request` rule's entry when no checks rule exists yet, and read `rules/branches/<default>` back. The file is the whole body and the PUT replaces the ruleset with it, so when the file is absent, or a read of `gh api repos/OWNER/REPO/rulesets/<id>` shows rules the file lacks, write the file from that response first, keeping only the top-level fields in the verified table. A rule whose source is not this repo (an org ruleset) cannot be edited from here: report it and ask nothing. Declined, or the question cannot be asked: change nothing and put the diff in the reply.
 
 **An org ruleset already in force (Fact 2 shows a rule with a source other than this repo).** A repo ruleset stacks on it, the stricter setting wins, and the repo copy is still worth having: it survives the repo leaving the org. Say in the reply which rules the org already enforces.
 
@@ -96,5 +105,5 @@ Checked against the REST reference for repository rules and the rulesets docs on
 | rule `required_linear_history` | no parameters; the repo must allow squash or rebase merging first |
 | rule `pull_request` | required parameters: `dismiss_stale_reviews_on_push`, `require_code_owner_review`, `require_last_push_approval`, `required_approving_review_count`, `required_review_thread_resolution`; optional `allowed_merge_methods` (`merge`, `squash`, `rebase`) |
 | rule `required_status_checks` | `strict_required_status_checks_policy` (required), `required_status_checks` array of `{context, integration_id?}`, `do_not_enforce_on_create` (optional) |
-| endpoints | `POST /repos/{owner}/{repo}/rulesets` (201), `GET /repos/{owner}/{repo}/rulesets`, `GET /repos/{owner}/{repo}/rulesets/{id}`, `GET /repos/{owner}/{repo}/rules/branches/{branch}` |
+| endpoints | `POST /repos/{owner}/{repo}/rulesets` (201), `GET /repos/{owner}/{repo}/rulesets`, `GET /repos/{owner}/{repo}/rulesets/{id}`, `PUT /repos/{owner}/{repo}/rulesets/{id}` (full body, replaces the ruleset; verified 2026-09-18), `GET /repos/{owner}/{repo}/rules/branches/{branch}` (each rule carries `ruleset_id`, `ruleset_source_type`, `ruleset_source`), `GET /repos/{owner}/{repo}/commits/{ref}/status` (`statuses[].context`) |
 | availability | public repos on every plan; private repos on Pro, Team, and Enterprise Cloud |

@@ -124,6 +124,11 @@ if [ "$API" = yes ] && [ -n "$DEFAULT" ]; then
   sha=$(git rev-parse "origin/$DEFAULT" 2>/dev/null || git rev-parse HEAD)
   names=$(gh api "repos/$SLUG/commits/$sha/check-runs" -q '.check_runs[].name' 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
   say "check-run-names-on-$DEFAULT" "${names:-unknown (no check runs on $sha, or api error)}"
+  if st=$(gh api "repos/$SLUG/commits/$sha/status" -q '[.statuses[].context] | unique | join(",")' 2>/dev/null); then
+    say "status-contexts-on-$DEFAULT" "${st:-none}"
+  else
+    say "status-contexts-on-$DEFAULT" "unknown (api error)"
+  fi
 else
   say "check-run-names" "unknown (api unreachable)"
 fi
@@ -142,10 +147,14 @@ if [ "$API" = yes ]; then
     fi
     rs=$(gh api "repos/$SLUG/rulesets" -q '.[] | "\(.id) \(.name) \(.enforcement) \(.source_type)"' 2>/dev/null | tr '\n' ';')
     say "repo-rulesets" "${rs:-none}"
-    inforce=$(gh api "repos/$SLUG/rules/branches/$DEFAULT" -q '.[] | "\(.type)@\(.ruleset_source_type // "?")"' 2>/dev/null | sort -u | tr '\n' ' ')
-    say "rules-in-force-on-$DEFAULT" "${inforce:-none}"
-    req=$(gh api "repos/$SLUG/rules/branches/$DEFAULT" -q '[.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | join(",")' 2>/dev/null)
-    say "required-checks-on-$DEFAULT" "${req:-none}"
+    if rules=$(gh api "repos/$SLUG/rules/branches/$DEFAULT" 2>/dev/null); then
+      inforce=$(printf '%s' "$rules" | jq -r '.[] | "\(.type)@\(.ruleset_source_type // "?")#\(.ruleset_id // "?")"' | sort -u | tr '\n' ' ')
+      say "rules-in-force-on-$DEFAULT" "${inforce:-none} (type@source#ruleset-id)"
+      req=$(printf '%s' "$rules" | jq -r '[.[] | select(.type=="required_status_checks") | "\([.parameters.required_status_checks[].context] | join(",")) (ruleset \(.ruleset_id), \(.ruleset_source_type), strict=\(.parameters.strict_required_status_checks_policy))"] | join("; ")')
+      say "required-checks-on-$DEFAULT" "${req:-none}"
+    else
+      say "rules-in-force-on-$DEFAULT" "unknown (api error)"; say "required-checks-on-$DEFAULT" "unknown (api error)"
+    fi
   fi
   say "merge-methods" "$(gh repo view "$SLUG" --json mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed -q '"merge=\(.mergeCommitAllowed) squash=\(.squashMergeAllowed) rebase=\(.rebaseMergeAllowed)"' 2>/dev/null || echo 'unknown (api error)')"
   OWNER=${SLUG%%/*}
