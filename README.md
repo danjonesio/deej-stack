@@ -34,13 +34,13 @@ To work from a checkout instead, `claude --plugin-dir /path/to/deej-stack` loads
 
 Open **Customize** from the sidebar, then **Add Marketplace → Import from GitHub**, paste `https://github.com/danjonesio/deej-stack`, and press **Add** on the `deej-stack` card. Skills run unprefixed: `/d-plan`.
 
-To work from a checkout instead:
+To work from a checkout instead, copy it in; Cursor rejects a symlink that points outside that folder:
 
 ```bash
-ln -s /path/to/deej-stack ~/.cursor/plugins/local/deej-stack
+rsync -a --delete --exclude .git /path/to/deej-stack/ ~/.cursor/plugins/local/deej-stack/
 ```
 
-then **Developer: Reload Window**. A marketplace install of the same name takes precedence over the local copy, so keep one or the other.
+then **Developer: Reload Window**, and again after each edit. A marketplace install of the same name takes precedence over the local copy, so keep one or the other.
 
 **Updating**: a personal GitHub import is pinned to the commit Cursor saw when you imported it; Uninstall + Add, Update, and Reinstall all put that same commit back (Cursor staff on the forum, no fix as of August 2026). To move to the current commit: Customize → Browse → the **Danjonesio Deej Stack** heading → **⋯ → Remove**, then **Add Marketplace → Import from GitHub** again and **Add** the plugin. Same with the Cursor CLI: `agent plugin marketplace remove <name from agent plugin marketplace list>`, `agent plugin marketplace add https://github.com/danjonesio/deej-stack`, then reinstall from `/plugin`. For a checkout, `git pull` then **Developer: Reload Window**.
 
@@ -67,7 +67,7 @@ AGENTS.md                    conventions; CLAUDE.md imports it
 
 ## Hooks
 
-They load with the plugin in both harnesses, so a user-scope install runs them in every project; nothing is added to a repo, to `settings.json`, or to `~/.cursor/hooks.json`. The scripts are shared; `hooks/hooks.json` wires them into Claude Code and `hooks/hooks-cursor.json` into Cursor, where the skill is offered as `/d-github`. The Claude Code side has been watched firing; the Cursor side is built to Cursor's documented hook contract and tested against it, so after installing, open **Customize → Hooks** and the **Hooks** output channel once to confirm all three are listed and run.
+They load with the plugin in both harnesses, so a user-scope install runs them in every project; nothing is added to a repo, to `settings.json`, or to `~/.cursor/hooks.json`. The scripts are shared; `hooks/hooks.json` wires them into Claude Code and `hooks/hooks-cursor.json` into Cursor, where the skill is offered as `/d-github`. Both have been watched denying a push to `main`: Claude Code in a live session, Cursor in a local session. Cursor **Cloud Agents do not run plugin hooks**, so neither the offer nor the push guard exists there; what protects `main` from a cloud agent is the repo's GitHub ruleset, which `/d-github` sets up. After installing in Cursor, **Customize → Hooks** should list all three.
 
 | hook | event | what it does |
 |---|---|---|

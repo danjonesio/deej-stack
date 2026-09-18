@@ -12,10 +12,10 @@ Dan's personal agent skills and automations, packaged as a plugin that loads in 
 | Hooks | `hooks/hooks.json`, auto-discovered | `hooks/hooks-cursor.json`, named by `"hooks"` in the manifest, which switches off Cursor's own discovery of `hooks/hooks.json` |
 | Skill invocation | `/deej-stack:d-plan` | `/d-plan` |
 | Project instructions | `CLAUDE.md` (imports this file) | this file |
-| Load from the working tree | `claude --plugin-dir .` | symlink at `~/.cursor/plugins/local/deej-stack`, then **Developer: Reload Window** |
+| Load from the working tree | `claude --plugin-dir .` | a real copy, not a symlink: `rsync -a --delete --exclude .git ./ ~/.cursor/plugins/local/deej-stack/`, then **Developer: Reload Window**. Cursor rejects a symlink whose target is outside that folder (its "Cursor Plugins" log: `loadUserLocalPlugin deej-stack rejected: symlink target … is outside …/plugins/local`, 2026-09-06), and a marketplace install of the same name shadows the copy |
 | Install from GitHub | `claude plugin marketplace add danjonesio/deej-stack` then `claude plugin install deej-stack@deej-stack`; `/reload-plugins` or a new session | **Customize → Add Marketplace → Import from GitHub** with the repo URL, then **Add** on the plugin card |
 | Update an install | snapshot keyed by `version` in `.claude-plugin/plugin.json`: bump it, then `claude plugin marketplace update deej-stack` and `claude plugin update deej-stack@deej-stack` (the second does not refresh the clone) | a GitHub import is pinned to its import-time commit: remove the marketplace and import it again (Uninstall + Add keeps the old commit); a marketplace install shadows a `plugins/local` copy of the same name |
-| Validate | `claude plugin validate .` | open **Customize → Skills** and confirm `d-plan` is listed |
+| Validate | `claude plugin validate .` | open **Customize → Skills** and confirm `d-plan` is listed; **Customize → Hooks** lists two `sessionStart` and one `beforeShellExecution` |
 
 Skills and agents are the same files for both. Only the manifests and the project-instruction file differ. Hooks share their scripts and differ in the wiring file, because the two harnesses disagree on event names and on the JSON a hook prints.
 
@@ -71,8 +71,9 @@ A hook is for what prose cannot guarantee: a check that must run in every projec
 | Project directory | `CLAUDE_PROJECT_DIR`, `cwd` on stdin | `CLAUDE_PROJECT_DIR` (alias, always set), `workspace_roots` on stdin |
 | Which harness is calling | no `cursor_version` on stdin | `cursor_version` on stdin. Never decide from environment variables: Claude Code started in Cursor's terminal inherits Cursor's |
 | Skill name in hook text | `/deej-stack:d-github` | `/d-github` |
+| Where hooks run | every session on the machine | local sessions only. Cloud Agents do not run plugin hooks: same plugin version, same repo, a push to `main` went through in a cloud agent and was denied in a local session (2026-09-18). Cursor's docs say cloud agents load only a project's `.cursor/hooks.json` and team or enterprise hooks. There, the repo's GitHub ruleset is what protects the default branch |
 
-Keys verified on 2026-09-18 against code.claude.com/docs/en/hooks and cursor.com/docs/hooks + cursor.com/docs/reference/plugins. The Claude Code column is also proven by a live run; the Cursor column is proven only by `hooks/test.sh` feeding the documented input, until someone watches it fire in Customize → Hooks.
+Keys verified on 2026-09-18 against code.claude.com/docs/en/hooks and cursor.com/docs/hooks + cursor.com/docs/reference/plugins. The Claude Code column is also proven by a live run. In Cursor the deny path has been watched live in a local session (2026-09-18: the push was rejected with the `user_message`, and the agent acted on the `agent_message`); the session-start context and the silent allow path are proven only by `hooks/test.sh` feeding the documented input.
 
 - Scripts are read-only, print nothing when they have nothing to say, and fail open: a hook that errors or cannot parse its input exits 0 with no output, so a bug here never blocks work in another repo. Stay local; a network call needs a timeout and an answer it may not get, which is an unknown, never a "yes".
 - Text a hook hands the agent is agent-facing prose and held to the prose rules below. A deny says what to do instead.
