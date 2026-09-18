@@ -74,6 +74,9 @@ git commit -q --allow-empty -m "point at $SECRET"
 push "commit message" block origin topic
 has  "reported as (commit message)" '(commit message)'
 git reset -q --hard HEAD~1
+echo "host = BOX-1234.Tail-Scale.TS.NET" > caps.ini; git add caps.ini; git commit -qm "caps"
+push "a different case of the same value" block origin topic
+git reset -q --hard HEAD~1
 mkdir -p "hosts"; echo x > "hosts/$SECRET.yml"; git add hosts; git commit -qm "host file"
 push "file path" block origin topic
 git reset -q --hard HEAD~1

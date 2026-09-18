@@ -144,6 +144,8 @@ if [ "$API" = yes ]; then
     say "repo-rulesets" "${rs:-none}"
     inforce=$(gh api "repos/$SLUG/rules/branches/$DEFAULT" -q '.[] | "\(.type)@\(.ruleset_source_type // "?")"' 2>/dev/null | sort -u | tr '\n' ' ')
     say "rules-in-force-on-$DEFAULT" "${inforce:-none}"
+    req=$(gh api "repos/$SLUG/rules/branches/$DEFAULT" -q '[.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | join(",")' 2>/dev/null)
+    say "required-checks-on-$DEFAULT" "${req:-none}"
   fi
   say "merge-methods" "$(gh repo view "$SLUG" --json mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed -q '"merge=\(.mergeCommitAllowed) squash=\(.squashMergeAllowed) rebase=\(.rebaseMergeAllowed)"' 2>/dev/null || echo 'unknown (api error)')"
   OWNER=${SLUG%%/*}
@@ -179,13 +181,10 @@ if [ -r "$PF" ]; then
 else
   say "user-pattern-file" "absent ($PF)"
 fi
-say "script" "$([ -f .github/scripts/private-patterns.sh ] && echo present || echo absent)"
-say "workflow" "$([ -f .github/workflows/private-patterns.yml ] && echo present || echo absent)"
-if [ -f .pre-commit-config.yaml ]; then
-  say "pre-commit-config" "present, hook $(grep -q 'id: private-patterns' .pre-commit-config.yaml && echo present || echo absent)"
-else
-  say "pre-commit-config" "absent"
-fi
+RETIRED=""
+for f in .github/workflows/private-patterns.yml .github/scripts/private-patterns.sh; do [ -f "$f" ] && RETIRED="$RETIRED $f"; done
+grep -qs 'id: private-patterns' .pre-commit-config.yaml && RETIRED="$RETIRED .pre-commit-config.yaml(hook)"
+RETIRED="${RETIRED# }"; say "retired-ci-files" "${RETIRED:-none}"
 GHP=$(git config --global --get core.hooksPath 2>/dev/null || echo ""); GHP="${GHP/#\~/$HOME}"
 say "global-hooks-path" "${GHP:-unset}"
 if [ -n "$GHP" ] && [ -f "$GHP/pre-push" ]; then
@@ -195,17 +194,10 @@ else
 fi
 LHP=$(git config --local --get core.hooksPath 2>/dev/null || echo "")
 say "local-hooks-path" "${LHP:-none}${LHP:+ (overrides the global path: the machine-wide pre-push does not run in this clone)}"
-if [ "$GH" = yes ]; then
-  tag=$(gh api repos/actions/checkout/releases/latest -q .tag_name 2>/dev/null)
-  sha=$([ -n "$tag" ] && gh api "repos/actions/checkout/commits/$tag" -q .sha 2>/dev/null)
-  say "checkout-latest" "${tag:-unknown} ${sha:-unknown (api error)}"
-else
-  say "checkout-latest" "unknown (gh unavailable)"
-fi
 if [ -r "$PF" ]; then
   pats=$(mktemp); grep -vE '^[[:space:]]*(#|$)' "$PF" > "$pats"
   if [ -s "$pats" ]; then
-    hits=$(git grep -InE -f "$pats" -- . ':!.github/scripts/private-patterns.sh' ':!.pre-commit-config.yaml' 2>/dev/null | cut -d: -f1,2)
+    hits=$(git grep -IniE -f "$pats" -- . 2>/dev/null | cut -d: -f1,2)
     say "tree-hits" "$(printf '%s' "$hits" | grep -c .) (path:line only; matched text is never printed)"
     [ -n "$hits" ] && printf '%s\n' "$hits" | head -20 | sed 's/^/  /'
   else

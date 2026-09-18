@@ -105,9 +105,10 @@ export GIT_CONFIG_GLOBAL="$TMP/gitconfig" DEEJ_GIT_HOOKS="$TMP/git-hooks"
 INSTALL="$HERE/../skills/d-github/scripts/install-git-hooks.sh"
 bash "$INSTALL" >/dev/null
 
+# a gh that records being called: the offer must never touch the network
+mkdir "$TMP/nogh"; printf '#!/bin/sh\ntouch "%s/gh-was-called"\nexit 1\n' "$TMP" > "$TMP/nogh/gh"; chmod +x "$TMP/nogh/gh"
 offer() { printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR="$1" PATH="$TMP/nogh:$PATH" bash "$HERE/d-github-offer.sh"; }
 coffer() { printf '{"hook_event_name":"sessionStart","cursor_version":"3.0.0"}' | CLAUDE_PROJECT_DIR="$1" PATH="$TMP/nogh:$PATH" bash "$HERE/d-github-offer.sh" | jq -r .additional_context; }
-mkdir "$TMP/nogh"; printf '#!/bin/sh\nexit 1\n' > "$TMP/nogh/gh"; chmod +x "$TMP/nogh/gh"
 
 echo "# d-github-offer"
 expect "silent when origin is not github" empty "$(offer "$W")"
@@ -118,11 +119,8 @@ expect "Cursor: valid JSON naming the bare skill" 'Offer /d-github once.*`git co
 mkdir -p "$W/.github/rulesets"; echo '{}' > "$W/.github/rulesets/default-branch.json"
 expect "names only what is missing" 'misses GitHub standards (no .github/dependabot.yml)' "$(offer "$W")"
 touch "$W/.github/dependabot.yml"
-expect "silent when visibility is unknown" empty "$(offer "$W")"
-printf '#!/bin/sh\necho PUBLIC\n' > "$TMP/nogh/gh"
-expect "offers on a public repo without private-patterns" 'public with no' "$(offer "$W")"
-mkdir -p "$W/.github/workflows"; touch "$W/.github/workflows/private-patterns.yml"
 expect "silent when every standard is met" empty "$(offer "$W")"
+[ ! -e "$TMP/gh-was-called" ] && echo "ok    never calls gh" || { echo "FAIL  the offer called gh"; FAIL=1; }
 
 echo "# d-github-offer, machine pre-push hook (repo meets every standard)"
 echo "# drift" >> "$TMP/git-hooks/pre-push"

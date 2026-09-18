@@ -1,5 +1,7 @@
 # Secret Protection Standard Implementation Plan
 
+> **Superseded on 2026-09-18 (0.10.0).** The CI workflow, the in-tree script, the pre-commit hook, the `PRIVATE_PATTERNS` repository secret and the required check described below were removed: the private-pattern check is local only (a machine-wide git `pre-push` hook). This file is a record of the first design. Do not implement from it; the standard is `skills/d-github/references/secret-protection.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a "Secret protection" standard to `/d-github` that confirms GitHub's secret-scanning toggles, guards public repos against private hostnames with a CI job and a pre-commit hook that read patterns kept out of the tree, and scans history on a `publish` ask.
