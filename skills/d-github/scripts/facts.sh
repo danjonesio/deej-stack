@@ -6,6 +6,7 @@
 # as a question, never as a "no".
 
 set -u
+HERE=$(cd "$(dirname "$0")" && pwd)
 cd "${1:-.}" 2>/dev/null || { echo "repo-root: unknown (not a directory: ${1:-.})"; exit 0; }
 git rev-parse --show-toplevel >/dev/null 2>&1 || { echo "repo-root: unknown (not a git repository)"; exit 0; }
 cd "$(git rev-parse --show-toplevel)"
@@ -185,7 +186,15 @@ if [ -f .pre-commit-config.yaml ]; then
 else
   say "pre-commit-config" "absent"
 fi
-say "pre-commit-binary" "$(command -v pre-commit >/dev/null 2>&1 && echo present || echo absent)"
+GHP=$(git config --global --get core.hooksPath 2>/dev/null || echo ""); GHP="${GHP/#\~/$HOME}"
+say "global-hooks-path" "${GHP:-unset}"
+if [ -n "$GHP" ] && [ -f "$GHP/pre-push" ]; then
+  say "pre-push-hook" "$(cmp -s "$HERE/git-hooks/pre-push" "$GHP/pre-push" && echo current || echo "outdated (differs from $HERE/git-hooks/pre-push)")"
+else
+  say "pre-push-hook" "absent"
+fi
+LHP=$(git config --local --get core.hooksPath 2>/dev/null || echo "")
+say "local-hooks-path" "${LHP:-none}${LHP:+ (overrides the global path: the machine-wide pre-push does not run in this clone)}"
 if [ "$GH" = yes ]; then
   tag=$(gh api repos/actions/checkout/releases/latest -q .tag_name 2>/dev/null)
   sha=$([ -n "$tag" ] && gh api "repos/actions/checkout/commits/$tag" -q .sha 2>/dev/null)

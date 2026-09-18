@@ -1,8 +1,0 @@
-repos:
-  - repo: local
-    hooks:
-      - id: private-patterns
-        name: private patterns
-        language: script
-        entry: .github/scripts/private-patterns.sh
-        exclude: ^(\.github/scripts/private-patterns\.sh|\.pre-commit-config\.yaml)$

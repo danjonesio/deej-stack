@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# deej-stack pre-push: refuse a push whose commits add a private pattern, unless the remote is private.
+# Installed machine-wide by skills/d-github/scripts/install-git-hooks.sh (global core.hooksPath), so it
+# runs for every push from every clone, whoever typed it: you, an agent, an IDE.
+#
+# Patterns: the file named by $DEEJ_PRIVATE_PATTERNS, else ~/.config/deej-stack/private-patterns. One
+#   POSIX extended regex per line; '#' comments and blank lines are ignored. No file: nothing is checked.
+# Scanned: only what this push would publish: lines added by the outgoing commits, the paths they
+#   touch, and their commit messages. Content the remote already has is not re-checked.
+# Visibility is looked up only when there is a hit, so a clean push costs no network call. GitHub
+#   remotes ask the API and cache the answer in this clone (deej-stack.<remote>.visibility); when the
+#   API does not answer, the cache stands in; with neither, or on a non-GitHub remote with no cached
+#   value, the remote counts as public.
+# Output names commit and path, never the matched text. Bypass: git push --no-verify.
+# Afterwards it hands over to the repo's own .git/hooks/pre-push, which core.hooksPath would otherwise hide.
+
+set -u
+remote="${1:-}"; url="${2:-}"
+input=$(cat)
+
+chain() {
+  local dir hook
+  dir=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
+  hook="$dir/hooks/pre-push"
+  if [ -x "$hook" ]; then printf '%s\n' "$input" | "$hook" "$@"; exit $?; fi
+  exit 0
+}
+
+pf="${DEEJ_PRIVATE_PATTERNS:-$HOME/.config/deej-stack/private-patterns}"
+[ -r "$pf" ] || chain "$@"
+tmp=$(mktemp -d) || chain "$@"
+trap 'rm -rf "$tmp"' EXIT
+grep -vE '^[[:space:]]*(#|$)' "$pf" > "$tmp/pats"
+[ -s "$tmp/pats" ] || chain "$@"
+
+zero='^0+$'
+: > "$tmp/locs"; : > "$tmp/texts"
+while read -r _ lsha _ rsha; do
+  [ -n "${lsha:-}" ] || continue
+  [[ $lsha =~ $zero ]] && continue                      # a delete publishes nothing
+  if [[ $rsha =~ $zero ]] || ! git cat-file -e "$rsha^{commit}" 2>/dev/null; then
+    range=("$lsha" --not "--remotes=$remote")           # new branch, or a remote tip we do not have
+  else
+    range=("$rsha..$lsha")
+  fi
+  git log --no-color --no-ext-diff --no-textconv -p -U0 --format='%x01%H%n%B' "${range[@]}" 2>/dev/null |
+    awk -v L="$tmp/locs" -v T="$tmp/texts" '
+      function out(where, text) { print commit "\t" where >> L; print text >> T }
+      /^\001/          { commit = substr($0, 2, 12); state = "msg"; next }
+      /^diff --git /   { state = "head"; file = "?"; next }
+      state == "msg"   { if ($0 != "") out("(commit message)", $0); next }
+      state == "head" && /^\+\+\+ b\// { file = substr($0, 7); out(file, file); next }
+      state == "head" && /^@@/         { state = "body"; next }
+      state == "body" && /^@@/         { next }
+      state == "body" && /^\+/         { out(file, substr($0, 2)) }
+    '
+done <<< "$input"
+
+[ -s "$tmp/texts" ] || chain "$@"
+grep -anE -f "$tmp/pats" "$tmp/texts" | cut -d: -f1 > "$tmp/nums"
+[ -s "$tmp/nums" ] || chain "$@"
+hits=$(awk 'NR == FNR { want[$1]; next } FNR in want' "$tmp/nums" "$tmp/locs" | sort -u)
+
+raw=$(git config --get "remote.$remote.url" 2>/dev/null) && key="deej-stack.$remote.visibility" || { raw="$url"; key=""; }
+slug=""
+case "$raw" in *github.com[:/]*) slug=$(printf '%s' "$raw" | sed -E 's#.*github\.com[:/]##; s#\.git$##; s#/$##') ;; esac
+vis=""
+if [ -n "$slug" ] && command -v gh >/dev/null 2>&1; then
+  t=""; command -v timeout >/dev/null 2>&1 && t="timeout 5"
+  vis=$($t gh repo view "$slug" --json visibility -q .visibility 2>/dev/null | tr '[:lower:]' '[:upper:]')
+  [ -n "$vis" ] && [ -n "$key" ] && git config --local "$key" "$vis" 2>/dev/null
+fi
+[ -z "$vis" ] && [ -n "$key" ] && vis=$(git config --local --get "$key" 2>/dev/null | tr '[:lower:]' '[:upper:]')
+n=$(printf '%s\n' "$hits" | grep -c .)
+
+if [ "$vis" = "PRIVATE" ] || [ "$vis" = "INTERNAL" ]; then
+  echo "deej-stack pre-push: $n place(s) match a private pattern; allowed because ${slug:-$remote} is not public ($vis)." >&2
+  chain "$@"
+fi
+
+{
+  [ -n "$vis" ] && state="public" || state="of unknown visibility, which counts as public"
+  echo "deej-stack pre-push: refused. $n place(s) in the commits being pushed match a private pattern, and ${slug:-$remote} is $state."
+  printf '%s\n' "$hits" | head -20 | sed 's/^/  /'
+  [ "$n" -gt 20 ] && echo "  ... and $((n - 20)) more"
+  echo "Format: commit, then path. The matched text is never printed; the patterns are in $pf."
+  echo "Nothing has left this machine. Take the value out of those commits (git commit --amend for the last one, git rebase -i for older ones) and push again."
+  echo "A false positive is the user's call alone: they run 'git push --no-verify' themselves; an agent never does."
+  [ -z "$slug" ] && [ -n "$key" ] && echo "A private remote that is not on GitHub: git config $key private"
+} >&2
+exit 1
