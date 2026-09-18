@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# deej-stack hook chain. A global core.hooksPath replaces every repo's .git/hooks, so this file is
+# installed under each standard hook name and hands over to the repo's own hook of that name, if any.
+dir=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
+hook="$dir/hooks/$(basename "$0")"
+[ -x "$hook" ] && exec "$hook" "$@"
+exit 0

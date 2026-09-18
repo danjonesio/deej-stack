@@ -50,7 +50,7 @@ then **Developer: Reload Window**. A marketplace install of the same name takes 
 |---|---|
 | [`/d-plan`](./skills/d-plan/SKILL.md) | you're about to build a feature, an app, or a change that's more than a one-file edit, and you want the plan stress-tested before any code exists. |
 | [`/d-implement`](./skills/d-implement/SKILL.md) | you have a plan from `/d-plan` and want it built step by step, each step verified and committed, with a review panel on the finished diff. |
-| [`/d-github`](./skills/d-github/SKILL.md) | a repo on GitHub is missing one of the standing standards, or you want what it has checked against them. Today: a Dependabot config (version updates where merges deploy nothing, grouped security-only updates where they do), a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on; a CI job and pre-commit hook that grep for private hostnames from a pattern list that never enters the tree; `publish` scans history before a repo goes public). Single agent, no panel; the model may offer it on its own. Standards to come land as rows in its table. |
+| [`/d-github`](./skills/d-github/SKILL.md) | a repo on GitHub is missing one of the standing standards, or you want what it has checked against them. Today: a Dependabot config (version updates where merges deploy nothing, grouped security-only updates where they do), a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on; a machine-wide git `pre-push` hook that refuses to push a private hostname to a public remote, and a CI job as the backstop, both reading a pattern list that never enters the tree; `publish` scans history before a repo goes public). Single agent, no panel; the model may offer it on its own. Standards to come land as rows in its table. |
 
 ## Layout
 
@@ -59,7 +59,7 @@ then **Developer: Reload Window**. A marketplace install of the same name takes 
 .cursor-plugin/plugin.json   Cursor manifest
 skills/<name>/SKILL.md       the workflow (same files for both harnesses)
 skills/<name>/references/    what sub-agents receive verbatim, or a standard a skill applies
-skills/<name>/scripts/       read-only helpers (d-github's fact sheet)
+skills/<name>/scripts/       helpers (d-github's fact sheet, its git hooks and their installer)
 hooks/                       hooks.json (Claude Code), hooks-cursor.json (Cursor), shared scripts, test.sh
 agents/                      reusable sub-agent definitions (none yet)
 AGENTS.md                    conventions; CLAUDE.md imports it
@@ -71,7 +71,7 @@ They load with the plugin in both harnesses, so a user-scope install runs them i
 
 | hook | event | what it does |
 |---|---|---|
-| [`d-github-offer.sh`](./hooks/d-github-offer.sh) | session start | In a repo whose origin is on github.com and that has no `.github/dependabot.yml`, no ruleset file under `.github/rulesets/`, or is public with no `.github/workflows/private-patterns.yml`, tells the model to offer `/d-github` once. Say no and it records `deej-stack.d-github-offer=declined` in that clone's git config and stays quiet there; `git config --local --unset deej-stack.d-github-offer` brings it back. |
+| [`d-github-offer.sh`](./hooks/d-github-offer.sh) | session start | In a repo whose origin is on github.com and that has no `.github/dependabot.yml`, no ruleset file under `.github/rulesets/`, or is public with no `.github/workflows/private-patterns.yml`, tells the model to offer `/d-github` once. It makes the same offer when this machine lacks the standard's git `pre-push` hook or has an older copy than the plugin ships (a "no" to that alone is stored per machine: `git config --global deej-stack.pre-push-offer declined`). Say no and it records `deej-stack.d-github-offer=declined` in that clone's git config and stays quiet there; `git config --local --unset deej-stack.d-github-offer` brings it back. |
 | [`default-branch.py`](./hooks/default-branch.py) `session-start` | session start | When HEAD is on the default branch, tells the model to create a branch before the first change it will commit. |
 | [`default-branch.py`](./hooks/default-branch.py) `pre-push` | before a shell command | Denies any `git push` that would update the default branch, `main`, or `master`: explicit refspecs, `HEAD:main`, a bare push from `main`, `--all`, `--mirror`, deletes, and the same inside `cd … &&`, `git -C`, or `bash -c`. No exception, a new repo's first push included; a push to `main` is one you run yourself. It guards the agent, not the remote: the `/d-github` ruleset is what stops everyone else. |
 

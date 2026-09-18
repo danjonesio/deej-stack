@@ -100,6 +100,11 @@ expect "nudges on main" 'git switch -c' "$(session "$W")"
 expect "Cursor: nudges on main as additional_context" 'git switch -c' "$(csession "$W")"
 expect "silent outside a repo" empty "$(session "$TMP")"
 
+# the offer reads the global git config: give it a throwaway one with the machine hook installed
+export GIT_CONFIG_GLOBAL="$TMP/gitconfig" DEEJ_GIT_HOOKS="$TMP/git-hooks"
+INSTALL="$HERE/../skills/d-github/scripts/install-git-hooks.sh"
+bash "$INSTALL" >/dev/null
+
 offer() { printf '{"hook_event_name":"SessionStart"}' | CLAUDE_PROJECT_DIR="$1" PATH="$TMP/nogh:$PATH" bash "$HERE/d-github-offer.sh"; }
 coffer() { printf '{"hook_event_name":"sessionStart","cursor_version":"3.0.0"}' | CLAUDE_PROJECT_DIR="$1" PATH="$TMP/nogh:$PATH" bash "$HERE/d-github-offer.sh" | jq -r .additional_context; }
 mkdir "$TMP/nogh"; printf '#!/bin/sh\nexit 1\n' > "$TMP/nogh/gh"; chmod +x "$TMP/nogh/gh"
@@ -118,7 +123,22 @@ printf '#!/bin/sh\necho PUBLIC\n' > "$TMP/nogh/gh"
 expect "offers on a public repo without private-patterns" 'public with no' "$(offer "$W")"
 mkdir -p "$W/.github/workflows"; touch "$W/.github/workflows/private-patterns.yml"
 expect "silent when every standard is met" empty "$(offer "$W")"
-rm "$W/.github/dependabot.yml"; g "$W" config deej-stack.d-github-offer declined
+
+echo "# d-github-offer, machine pre-push hook (repo meets every standard)"
+echo "# drift" >> "$TMP/git-hooks/pre-push"
+expect "outdated copy is named" 'misses GitHub standards (machine pre-push hook outdated)' "$(offer "$W")"
+git config --global --unset core.hooksPath
+expect "missing hook is named" 'misses GitHub standards (machine pre-push hook not installed)' "$(offer "$W")"
+expect "its no is stored per machine" '`git config --global deej-stack.pre-push-offer declined`' "$(offer "$W")"
+rm "$W/.github/dependabot.yml"
+expect "alongside a repo gap, the no is stored per clone" 'dependabot.yml; machine pre-push hook not installed.*`git config --local deej-stack.d-github-offer declined`' "$(offer "$W")"
+git config --global deej-stack.pre-push-offer declined
+expect "declined for the machine: only the repo gap is named" 'misses GitHub standards (no .github/dependabot.yml)' "$(offer "$W")"
+git config --global --unset deej-stack.pre-push-offer; bash "$INSTALL" >/dev/null
+expect "reinstalled: only the repo gap is named" 'misses GitHub standards (no .github/dependabot.yml)' "$(offer "$W")"
+
+echo "# d-github-offer, declined"
+g "$W" config deej-stack.d-github-offer declined
 expect "silent once declined" empty "$(offer "$W")"
 
 [ "$FAIL" = 0 ] && echo "all passed" || echo "FAILURES"

@@ -1,6 +1,6 @@
 ---
 name: d-github
-description: "Bring a GitHub repo up to Dan's standing repo standards: a Dependabot config shaped around whether a merge to the default branch deploys, a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on, plus a CI job and pre-commit hook that grep for private hostnames kept out of the tree). Use for /d-github, 'set up dependabot', 'protect main', 'branch protection', 'ruleset', 'secret scanning', 'push protection', 'private patterns', 'before making this public', 'standard repo setup', 'review our dependabot config', or whenever you notice a repo whose origin is on github.com has no .github/dependabot.yml, no .github/rulesets/, or is public with no .github/workflows/private-patterns.yml while working on its CI, dependencies, branches, or security settings: offer this skill before touching those by hand."
+description: "Bring a GitHub repo up to Dan's standing repo standards: a Dependabot config shaped around whether a merge to the default branch deploys, a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on, plus a machine-wide git pre-push hook and a CI job that grep for private hostnames kept out of the tree). Use for /d-github, 'set up dependabot', 'protect main', 'branch protection', 'ruleset', 'secret scanning', 'push protection', 'private patterns', 'pre-push hook', 'before making this public', 'standard repo setup', 'review our dependabot config', or whenever you notice a repo whose origin is on github.com has no .github/dependabot.yml, no .github/rulesets/, or is public with no .github/workflows/private-patterns.yml while working on its CI, dependencies, branches, or security settings: offer this skill before touching those by hand."
 argument-hint: [standard name] [review|publish]
 ---
 
@@ -48,7 +48,7 @@ Run `scripts/facts.sh <repo root>` (beside this file) once; it prints every fact
 
 ## Phase C: Decide
 
-Apply the **Rules** section of each selected standard to its facts. Collect every question the rules raise across all standards and ask them in one call of the question tool, each with the default the rules give. Anything that changes repository settings rather than files in the tree (enabling alerts, security updates, branch protection) is always a question, never an action taken on your own.
+Apply the **Rules** section of each selected standard to its facts. Collect every question the rules raise across all standards and ask them in one call of the question tool, each with the default the rules give. Anything that changes repository settings rather than files in the tree (enabling alerts, security updates, branch protection), or the machine's global git config, is always a question, never an action taken on your own.
 
 ## Phase D: Write
 
