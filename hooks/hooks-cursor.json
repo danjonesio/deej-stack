@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "command": "bash ./hooks/d-github-offer.sh", "timeout": 10 },
+      { "command": "python3 ./hooks/default-branch.py session-start", "timeout": 10 }
+    ],
+    "beforeShellExecution": [
+      { "command": "python3 ./hooks/default-branch.py pre-push", "matcher": "push", "timeout": 15 }
+    ]
+  }
+}
