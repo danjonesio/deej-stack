@@ -10,8 +10,6 @@
 # No commit-message prefix: conventional-prefixes-in-last-30 is 0 of 30.
 #
 # Not covered, on purpose:
-#   - pre-commit (.pre-commit-config.yaml): its only hook is `repo: local`, which has no upstream
-#     revision to bump. Add a `pre-commit` entry when a remote hook repo goes in.
 #   - No other manifest or lockfile is in the tree (`git ls-files` against the d-github table).
 #
 # Branch protection: the default-branch ruleset requires a PR and, since 2026-09-18, the

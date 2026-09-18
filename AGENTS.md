@@ -1,6 +1,6 @@
 # deej-stack
 
-Dan's personal agent skills and automations, packaged as a plugin that loads in both Claude Code and Cursor. Modelled on cursor's `pstack`. There is no application code beyond a few read-only scripts (`d-github`'s fact sheet, the hooks): the product is the prose in `skills/*/SKILL.md` and the reference files those skills hand to sub-agents. Agent-facing prose has a higher bar than human prose; an unhelpful sentence becomes an instruction.
+Dan's personal agent skills and automations, packaged as a plugin that loads in both Claude Code and Cursor. Modelled on cursor's `pstack`. There is no application code beyond a few scripts (`d-github`'s fact sheet and git hooks, the agent hooks): the product is the prose in `skills/*/SKILL.md` and the reference files those skills hand to sub-agents. Agent-facing prose has a higher bar than human prose; an unhelpful sentence becomes an instruction.
 
 ## Two harnesses, one repo
 
@@ -24,7 +24,7 @@ Skills and agents are the same files for both. Only the manifests and the projec
 - `.claude-plugin/`, `.cursor-plugin/`: manifests. Both auto-discover `skills/` and `agents/`; do not list components in them. The one exception is `"hooks"` in the Cursor manifest.
 - `skills/<name>/SKILL.md`: the workflow (phases, rules, delivery). Frontmatter `name` and `description` are required; `name` must match the folder.
 - `skills/<name>/references/`: anything a skill passes verbatim to a sub-agent (rosters, prompt templates, output templates, rubrics), or reads as a standard it applies (`d-github`). SKILL.md points at these by relative path and never restates them.
-- `skills/<name>/scripts/`: deterministic, read-only helpers a skill runs instead of composing the same commands every time (`d-github/scripts/facts.sh`). A script never writes to the repo or to GitHub; the judgement stays in the prose.
+- `skills/<name>/scripts/`: deterministic helpers a skill runs instead of composing the same commands every time (`d-github/scripts/facts.sh`). A script never writes to the repo or to GitHub; the judgement stays in the prose. One script writes at all, `d-github/scripts/install-git-hooks.sh`, and only to the machine (`~/.config/deej-stack/git-hooks`, global `core.hooksPath`), only after a question. `d-github/scripts/git-hooks/` is what it installs; `test-git-hooks.sh` must pass before a version bump.
 - `hooks/`: `hooks.json` (Claude Code wiring), `hooks-cursor.json` (Cursor wiring), one script per concern that both call, and `test.sh` covering every script in both dialects.
 - `agents/<name>.md`: reusable sub-agent definitions. None yet; today skills spawn general-purpose agents with inline prompts built from `references/`.
 
@@ -56,6 +56,8 @@ Skills and agents are the same files for both. Only the manifests and the projec
 Adding a standard: one reference file in that shape, one row in the SKILL.md table, and a check that the `description` still names the trigger for it. `hooks/d-github-offer.sh` makes it fire on entering a repo, so a standard that adds a missing-file trigger adds the same check there, with a case in `hooks/test.sh`; the description makes it fire mid-task.
 
 ## Hooks
+
+These are agent-harness hooks. A guard that must hold whoever runs the command (you, an agent, an IDE) is a git hook instead: see `skills/d-github/scripts/git-hooks/`.
 
 A hook is for what prose cannot guarantee: a check that must run in every project at session start, or an action that must never happen. Anything that needs judgement stays a skill. Build and prove a hook in Claude Code first, then add the Cursor wiring.
 
