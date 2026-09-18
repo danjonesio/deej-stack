@@ -60,19 +60,24 @@ then **Developer: Reload Window**. A marketplace install of the same name takes 
 skills/<name>/SKILL.md       the workflow (same files for both harnesses)
 skills/<name>/references/    what sub-agents receive verbatim, or a standard a skill applies
 skills/<name>/scripts/       read-only helpers (d-github's fact sheet)
+hooks/                       hooks.json (Claude Code), hooks-cursor.json (Cursor), shared scripts, test.sh
 agents/                      reusable sub-agent definitions (none yet)
 AGENTS.md                    conventions; CLAUDE.md imports it
 ```
 
-## Firing on its own
+## Hooks
 
-`/d-github` is the one skill the model may invoke unprompted. Its description covers the mid-task case (you are editing CI or dependencies in a repo with no Dependabot config). To have it offered on entering such a repo at all, add one line to `~/.claude/CLAUDE.md`:
+They load with the plugin in both harnesses, so a user-scope install runs them in every project; nothing is added to a repo, to `settings.json`, or to `~/.cursor/hooks.json`. The scripts are shared; `hooks/hooks.json` wires them into Claude Code and `hooks/hooks-cursor.json` into Cursor, where the skill is offered as `/d-github`. The Claude Code side has been watched firing; the Cursor side is built to Cursor's documented hook contract and tested against it, so after installing, open **Customize → Hooks** and the **Hooks** output channel once to confirm all three are listed and run.
 
-```
-In a repo whose origin is on github.com and that has no .github/dependabot.yml, no .github/rulesets/, or is public with no .github/workflows/private-patterns.yml, offer /deej-stack:d-github once, then drop it if declined.
-```
+| hook | event | what it does |
+|---|---|---|
+| [`d-github-offer.sh`](./hooks/d-github-offer.sh) | session start | In a repo whose origin is on github.com and that has no `.github/dependabot.yml`, no ruleset file under `.github/rulesets/`, or is public with no `.github/workflows/private-patterns.yml`, tells the model to offer `/d-github` once. Say no and it records `deej-stack.d-github-offer=declined` in that clone's git config and stays quiet there; `git config --local --unset deej-stack.d-github-offer` brings it back. |
+| [`default-branch.py`](./hooks/default-branch.py) `session-start` | session start | When HEAD is on the default branch, tells the model to create a branch before the first change it will commit. |
+| [`default-branch.py`](./hooks/default-branch.py) `pre-push` | before a shell command | Denies any `git push` that would update the default branch, `main`, or `master`: explicit refspecs, `HEAD:main`, a bare push from `main`, `--all`, `--mirror`, deletes, and the same inside `cd … &&`, `git -C`, or `bash -c`. No exception, a new repo's first push included; a push to `main` is one you run yourself. It guards the agent, not the remote: the `/d-github` ruleset is what stops everyone else. |
 
-Cursor's equivalent is a User Rule (Settings → Rules) with the same sentence and `/d-github`.
+`/d-github` is also the one skill the model may invoke unprompted: its description covers the mid-task case (you are editing CI or dependencies in a repo with no Dependabot config). The session-start hook replaces the trigger line earlier versions asked you to put in `~/.claude/CLAUDE.md`; delete that line (and the matching Cursor User Rule) once 0.8.0 is installed, or the offer arrives twice.
+
+`hooks/test.sh` runs every case above against throwaway repos. Needs `python3`, `jq`, `git`.
 
 ## Later
 
