@@ -14,8 +14,9 @@
 #     revision to bump. Add a `pre-commit` entry when a remote hook repo goes in.
 #   - No other manifest or lockfile is in the tree (`git ls-files` against the d-github table).
 #
-# Branch protection at write time: the default-branch ruleset requires a PR and has no required
-# status checks, so there is no strict up-to-date rebase churn between Dependabot PRs yet.
+# Branch protection: the default-branch ruleset requires a PR and, since 2026-09-18, the
+# private-patterns check on an up-to-date branch (strict). Every open Dependabot PR therefore
+# rebases after each merge, which is what the groups are for: one PR per wave, not one per action.
 # Dependabot alerts and security updates were both off (vulnerability-alerts: off,
 # automated-security-fixes: enabled=false) and were enabled in the same run.
 #
