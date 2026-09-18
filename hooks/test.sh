@@ -122,6 +122,21 @@ touch "$W/.github/dependabot.yml"
 expect "silent when every standard is met" empty "$(offer "$W")"
 [ ! -e "$TMP/gh-was-called" ] && echo "ok    never calls gh" || { echo "FAIL  the offer called gh"; FAIL=1; }
 
+echo "# Cursor session start: one entry point, both messages (Cursor keeps only the last additional_context)"
+cstart() { printf '{"hook_event_name":"sessionStart","cursor_version":"3.0.0","workspace_roots":["%s"]}' "$1" | CLAUDE_PROJECT_DIR="$1" PATH="$TMP/nogh:$PATH" python3 "$HERE/cursor-session-start.py"; }
+rm -f "$W/.github/dependabot.yml"; g "$W" switch main
+out=$(cstart "$W")
+expect "one JSON object" '^1$' "$(printf '%s' "$out" | jq -s 'length')"
+expect "carries the offer" 'Offer /d-github once' "$(printf '%s' "$out" | jq -r .additional_context)"
+expect "and the branch reminder" 'git switch -c' "$(printf '%s' "$out" | jq -r .additional_context)"
+g "$W" switch topic
+expect "on a topic branch: the offer alone" 'Offer /d-github once' "$(cstart "$W" | jq -r .additional_context)"
+expect "on a topic branch: no reminder" empty "$(cstart "$W" | jq -r .additional_context | grep 'git switch -c')"
+touch "$W/.github/dependabot.yml"
+expect "nothing to say: prints nothing" empty "$(cstart "$W")"
+expect "garbage stdin: prints nothing, exit 0" empty "$(printf 'not json' | CLAUDE_PROJECT_DIR="$TMP" python3 "$HERE/cursor-session-start.py")"
+g "$W" switch main
+
 echo "# d-github-offer, machine pre-push hook (repo meets every standard)"
 echo "# drift" >> "$TMP/git-hooks/pre-push"
 expect "outdated copy is named" 'misses GitHub standards (machine pre-push hook outdated)' "$(offer "$W")"
