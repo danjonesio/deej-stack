@@ -1,5 +1,7 @@
 # Secret protection standard for /d-github
 
+> **Superseded on 2026-09-18 (0.10.0).** The CI workflow, the in-tree script, the pre-commit hook, the `PRIVATE_PATTERNS` repository secret and the required check described below were removed: the private-pattern check is local only (a machine-wide git `pre-push` hook). This file is a record of the first design. Do not implement from it; the standard is `skills/d-github/references/secret-protection.md`.
+
 Date: 2026-09-15. Facts below verified against GitHub docs and the live API on 2026-09-13.
 
 ## Problem

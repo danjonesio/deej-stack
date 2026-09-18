@@ -50,7 +50,7 @@ then **Developer: Reload Window**. A marketplace install of the same name takes 
 |---|---|
 | [`/d-plan`](./skills/d-plan/SKILL.md) | you're about to build a feature, an app, or a change that's more than a one-file edit, and you want the plan stress-tested before any code exists. |
 | [`/d-implement`](./skills/d-implement/SKILL.md) | you have a plan from `/d-plan` and want it built step by step, each step verified and committed, with a review panel on the finished diff. |
-| [`/d-github`](./skills/d-github/SKILL.md) | a repo on GitHub is missing one of the standing standards, or you want what it has checked against them. Today: a Dependabot config (version updates where merges deploy nothing, grouped security-only updates where they do), a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on; a machine-wide git `pre-push` hook that refuses to push a private hostname to a public remote, and a CI job as the backstop, both reading a pattern list that never enters the tree; `publish` scans history before a repo goes public). Single agent, no panel; the model may offer it on its own. Standards to come land as rows in its table. |
+| [`/d-github`](./skills/d-github/SKILL.md) | a repo on GitHub is missing one of the standing standards, or you want what it has checked against them. Today: a Dependabot config (version updates where merges deploy nothing, grouped security-only updates where they do), a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on; a machine-wide git `pre-push` hook that refuses to push a private hostname to a public remote, reading a pattern list that stays on your machine: never in the tree, CI, or a repository secret; `publish` scans history before a repo goes public). Single agent, no panel; the model may offer it on its own. Standards to come land as rows in its table. |
 
 ## Layout
 
@@ -71,7 +71,7 @@ They load with the plugin in both harnesses, so a user-scope install runs them i
 
 | hook | event | what it does |
 |---|---|---|
-| [`d-github-offer.sh`](./hooks/d-github-offer.sh) | session start | In a repo whose origin is on github.com and that has no `.github/dependabot.yml`, no ruleset file under `.github/rulesets/`, or is public with no `.github/workflows/private-patterns.yml`, tells the model to offer `/d-github` once. It makes the same offer when this machine lacks the standard's git `pre-push` hook or has an older copy than the plugin ships (a "no" to that alone is stored per machine: `git config --global deej-stack.pre-push-offer declined`). Say no and it records `deej-stack.d-github-offer=declined` in that clone's git config and stays quiet there; `git config --local --unset deej-stack.d-github-offer` brings it back. |
+| [`d-github-offer.sh`](./hooks/d-github-offer.sh) | session start | In a repo whose origin is on github.com and that has no `.github/dependabot.yml` or no ruleset file under `.github/rulesets/`, tells the model to offer `/d-github` once. It makes the same offer when this machine lacks the standard's git `pre-push` hook or has an older copy than the plugin ships (a "no" to that alone is stored per machine: `git config --global deej-stack.pre-push-offer declined`). Say no and it records `deej-stack.d-github-offer=declined` in that clone's git config and stays quiet there; `git config --local --unset deej-stack.d-github-offer` brings it back. |
 | [`default-branch.py`](./hooks/default-branch.py) `session-start` | session start | When HEAD is on the default branch, tells the model to create a branch before the first change it will commit. |
 | [`default-branch.py`](./hooks/default-branch.py) `pre-push` | before a shell command | Denies any `git push` that would update the default branch, `main`, or `master`: explicit refspecs, `HEAD:main`, a bare push from `main`, `--all`, `--mirror`, deletes, and the same inside `cd … &&`, `git -C`, or `bash -c`. No exception, a new repo's first push included; a push to `main` is one you run yourself. It guards the agent, not the remote: the `/d-github` ruleset is what stops everyone else. |
 
@@ -81,7 +81,7 @@ They load with the plugin in both harnesses, so a user-scope install runs them i
 
 ## Private patterns
 
-Hostnames, internal domains, and URL fragments that must never reach a public repo. There is one list per machine, not per project: it lives in your home directory and nowhere else, and two things read it. (A shell or direnv that sets `DEEJ_PRIVATE_PATTERNS` is the only per-project override.)
+Hostnames, internal domains, and URL fragments that must never reach a public repo. There is one list per machine, not per project. It lives in your home directory and nowhere else: not in any repo, not in CI, not in a GitHub secret. One thing reads it, the git `pre-push` hook. (A shell or direnv that sets `DEEJ_PRIVATE_PATTERNS` is the only per-project override.)
 
 **1. Write the list.** One POSIX extended regex per line, `#` comments allowed. Use your editor, not a chat window or a PR.
 
@@ -101,17 +101,13 @@ Escape dots (`\.`), or `a.b` also matches `aXb`. Prefer the shared suffix (the t
 
 **2. That is all the git hook needs.** The machine-wide `pre-push` hook (installed by `/d-github`, or `skills/d-github/scripts/install-git-hooks.sh`) reads the file on every push and refuses one that would publish a match to a public remote. It prints commit and path, never the matched text.
 
-**3. Give each public repo's CI a copy.** The `private-patterns` workflow reads a repository secret, which nobody can read back, you included:
-
-```bash
-gh secret set PRIVATE_PATTERNS -R OWNER/REPO < ~/.config/deej-stack/private-patterns
-```
-
-Or run `/d-github` in the repo: with the file present it offers to set the secret, and lists any `path:line` in the tree that already matches. The secret is per repository; for repos owned by an organisation, `gh secret set PRIVATE_PATTERNS --org ORG --visibility all < ~/.config/deej-stack/private-patterns` sets it once for all of them. The file is the source of truth; after editing it, set the secret again wherever it lives.
+**3. Check what is already out there.** `/d-github` in a repo lists any `path:line` in the tree that already matches. The hook only stops new pushes; a match already on a public remote is already public.
 
 **4. Before making a private repo public:** `/d-github publish` also greps the whole history.
 
-Check what is in place with `skills/d-github/scripts/facts.sh` in any repo: `user-pattern-file`, `pre-push-hook`, `private-patterns-secret`, `tree-hits`.
+Check what is in place with `skills/d-github/scripts/facts.sh` in any repo: `user-pattern-file`, `pre-push-hook`, `tree-hits`.
+
+What this does not cover, on purpose: a push with `--no-verify`, from a machine without the hook, or an edit in GitHub's web editor. Earlier versions added a CI grep for those; it was removed because it only fires after the commit is public and needed a copy of the list in GitHub's secret store. `/d-github` removes the leftovers (workflow, script, required check, secret) from repos that still have them.
 
 ## Later
 

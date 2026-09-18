@@ -1,6 +1,6 @@
 ---
 name: d-github
-description: "Bring a GitHub repo up to Dan's standing repo standards: a Dependabot config shaped around whether a merge to the default branch deploys, a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on, plus a machine-wide git pre-push hook and a CI job that grep for private hostnames kept out of the tree). Use for /d-github, 'set up dependabot', 'protect main', 'branch protection', 'ruleset', 'secret scanning', 'push protection', 'private patterns', 'pre-push hook', 'before making this public', 'standard repo setup', 'review our dependabot config', or whenever you notice a repo whose origin is on github.com has no .github/dependabot.yml, no .github/rulesets/, or is public with no .github/workflows/private-patterns.yml while working on its CI, dependencies, branches, or security settings: offer this skill before touching those by hand."
+description: "Bring a GitHub repo up to Dan's standing repo standards: a Dependabot config shaped around whether a merge to the default branch deploys, a default-branch ruleset (PR required, checks up to date, no bypass, no force-push or deletion), and secret protection (GitHub's secret-scanning toggles on, plus a machine-wide git pre-push hook that greps outgoing commits for private hostnames; that list is local only, never in the tree, CI, or a repository secret). Use for /d-github, 'set up dependabot', 'protect main', 'branch protection', 'ruleset', 'secret scanning', 'push protection', 'private patterns', 'pre-push hook', 'before making this public', 'standard repo setup', 'review our dependabot config', or whenever you notice a repo whose origin is on github.com has no .github/dependabot.yml, or no .github/rulesets/ while working on its CI, dependencies, branches, or security settings: offer this skill before touching those by hand."
 argument-hint: [standard name] [review|publish]
 ---
 
@@ -15,7 +15,7 @@ You apply the standards in the table below to the repo you are in. Each standard
 |---|---|---|
 | Dependabot | `.github/dependabot.yml` is missing, or the ask says `review` | [`references/dependabot.md`](references/dependabot.md) |
 | Branch protection | the default branch has no active ruleset requiring a pull request, or the ask says `review` | [`references/branch-protection.md`](references/branch-protection.md) |
-| Secret protection | the repo is public and push protection is off or `.github/workflows/private-patterns.yml` is missing, or the ask says `review` or `publish` | [`references/secret-protection.md`](references/secret-protection.md) |
+| Secret protection | the repo is public and push protection is off; or this machine lacks the private-pattern list or the current `pre-push` hook; or files from the retired CI check are in the tree; or the ask says `review` or `publish` | [`references/secret-protection.md`](references/secret-protection.md) |
 
 ## Harness
 

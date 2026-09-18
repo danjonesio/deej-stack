@@ -4,8 +4,7 @@
 # Prints nothing otherwise.
 # Both harnesses run it. Cursor's stdin JSON carries "cursor_version"; it wants the text as
 # {"additional_context": ...} and names the skill /d-github. Claude Code takes plain stdout.
-# Read-only, and local except for one case: visibility is asked of the API only when it alone
-# decides the answer, and an API that does not answer is an unknown, not a "public".
+# Read-only and local: file checks and git config, no network call.
 # The user's "no" is stored per clone: git config --local deej-stack.d-github-offer declined
 # A "no" to the machine hook alone is stored per machine: git config --global deej-stack.pre-push-offer declined
 
@@ -28,11 +27,6 @@ MISSING=""
 add() { MISSING="${MISSING:+$MISSING; }$1"; }
 [ -f .github/dependabot.yml ] || add "no .github/dependabot.yml"
 ls .github/rulesets/*.json >/dev/null 2>&1 || add "no ruleset file under .github/rulesets/"
-if [ -z "$MISSING" ] && [ ! -f .github/workflows/private-patterns.yml ] \
-  && command -v gh >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
-  VIS=$(timeout 3 gh repo view "$SLUG" --json visibility -q .visibility 2>/dev/null || echo "")
-  [ "$VIS" = "PUBLIC" ] && add "public with no .github/workflows/private-patterns.yml"
-fi
 
 # The machine-wide pre-push hook of the secret-protection standard: installed, and the copy this
 # plugin version ships? Local checks only. Asked once per machine, so its "no" is global.
